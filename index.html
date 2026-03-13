@@ -205,8 +205,47 @@ body{
 .ep-divider .ep-desc{color:var(--text-dim);font-size:.85rem}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-@keyframes notePop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
-.animate-pop{animation:notePop .3s ease}
+@keyframes notePop{0%{transform:scale(1)}30%{transform:scale(1.06);box-shadow:0 0 16px rgba(245,158,11,.35)}60%{transform:scale(.98)}100%{transform:scale(1)}}
+.animate-pop{animation:notePop .5s ease}
+/* first-note tutorial toast */
+.note-toast{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);
+  background:var(--bg3);border:1px solid var(--amber-dim);border-radius:10px;
+  padding:.8rem 1.2rem;font-size:.82rem;color:var(--amber);z-index:250;
+  opacity:0;transition:all .5s ease;pointer-events:none;text-align:center;
+  max-width:320px;box-shadow:0 4px 24px rgba(0,0,0,.4);
+}
+.note-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* case report */
+.case-report{background:var(--bg2);border:1px solid var(--choice-border);border-radius:10px;padding:1.2rem;margin:.8rem 0}
+.case-report h4{color:var(--amber);font-size:.85rem;margin-bottom:.4rem;letter-spacing:.05em}
+.case-report .field-label{color:var(--cyan);font-size:.75rem;letter-spacing:.08em;margin-top:.8rem;margin-bottom:.2rem}
+.case-report .field-content{color:var(--text);font-size:.85rem;line-height:1.7}
+.case-report .risk-badge{display:inline-block;padding:.15rem .6rem;border-radius:4px;font-size:.75rem;font-weight:600}
+.case-report .risk-moderate{background:rgba(245,158,11,.15);color:var(--amber)}
+.case-report .risk-high{background:rgba(248,113,113,.15);color:var(--red)}
+/* self-reflection choices */
+.reflect-btn{
+  display:block;width:100%;text-align:left;
+  background:var(--bg3);color:var(--text);
+  border:1px solid var(--choice-border);border-radius:8px;
+  padding:.8rem 1rem;margin-bottom:.6rem;font-size:.85rem;line-height:1.6;
+  cursor:pointer;transition:all .25s ease;font-family:inherit;
+}
+.reflect-btn:hover{border-color:var(--cyan);color:var(--text-bright)}
+.reflect-btn.selected{border-color:var(--cyan);background:rgba(34,211,238,.08);color:var(--text-bright)}
+.reflect-feedback{
+  background:var(--bg3);border-left:3px solid var(--cyan);border-radius:0 8px 8px 0;
+  padding:.8rem 1rem;margin:.8rem 0;font-size:.84rem;color:var(--text);line-height:1.7;
+  opacity:0;transform:translateY(8px);transition:all .5s ease;
+}
+.reflect-feedback.show{opacity:1;transform:translateY(0)}
+/* choice stats */
+.choice-stat{display:flex;align-items:center;margin-bottom:.5rem;gap:.6rem;font-size:.82rem}
+.choice-stat .cs-label{flex:1;color:var(--text)}
+.choice-stat .cs-bar{width:120px;height:16px;background:var(--bg3);border-radius:8px;overflow:hidden}
+.choice-stat .cs-fill{height:100%;border-radius:8px;transition:width 1.2s ease;width:0}
+.choice-stat .cs-pct{min-width:35px;text-align:right;color:var(--text-dim);font-size:.78rem}
 @media(max-width:480px){
   #app{padding:.8rem .8rem 5rem}
   .scene-line.notable{padding-left:.6rem}
@@ -763,7 +802,68 @@ ep1_final: {
     { type:'dialogue', speaker:'林宥成', text:'⋯⋯謝謝。（很小聲）' },
     { type:'narration', text:'門關上了。' },
   ],
-  choices: [{ text:'回到諮商室', next:'hub' }]
+  choices: [{ text:'撰寫結案摘要', next:'ep1_debrief' }]
+},
+
+ep1_debrief: {
+  mood:'end',
+  render(container) {
+    // Determine counselor style based on path
+    const usedSilence = state.path.includes('ep1_silence');
+    const usedNote = state.path.includes('ep1_end_note');
+    const usedDeflect = state.path.includes('deflect1');
+    const deepExplore = state.path.includes('mom1') || state.path.includes('mom2') || state.path.includes('mom3');
+
+    let sessionSummary = '';
+    if (usedSilence) sessionSummary = '諮商師於關鍵時刻選擇沉默，給予個案自行整理思緒的空間。個案在無壓力環境中主動揭露核心困擾。此策略有效降低個案防衛。';
+    else if (usedNote) sessionSummary = '諮商師引用個案先前陳述之語句進行情感反映（reflection of feeling），個案表現出被理解的驚訝與釋放。此為本次晤談之關鍵轉折點。';
+    else if (usedDeflect) sessionSummary = '諮商師於早期階段直接探問自殺意念，個案出現防衛反應。後經調整策略，逐步重建治療同盟。需注意此類個案對制式化提問之敏感度。';
+    else sessionSummary = '諮商師以漸進方式建立信任關係，透過開放式提問引導個案自述。個案從初期的玩笑性防衛逐步轉為情感揭露。';
+
+    let conceptNote = deepExplore
+      ? '個案核心議題初步評估為存在性愧疚（existential guilt）：因感受到母親的犧牲而認為自己「不配活得輕鬆」。此非典型自殺意念，更接近自我價值的崩解。家庭動力中，母子之間存在未說出口的情感負擔——母親的付出成為個案的枷鎖。'
+      : '個案表面議題為學業壓力，但初步觀察核心困擾可能涉及家庭關係與自我價值。此面向尚未於本次晤談中充分評估，需於後續追蹤。';
+
+    const ep1Notes = state.notebook.filter(n => !n.scene.startsWith('ep2'));
+
+    container.innerHTML = `
+      <div class="case-report">
+        <h4>📋 晤談結案摘要 Session Summary</h4>
+        <div class="field-label">個案基本資料 CLIENT DEMOGRAPHICS</div>
+        <div class="field-content">林宥成（化名）｜17歲／男性｜高二在學｜初談</div>
+        <div class="field-label">主訴問題 PRESENTING PROBLEM</div>
+        <div class="field-content">個案因在聯絡簿寫「好想死」經導師轉介。個案否認主動自殺意念，自述「不是想死，是覺得不配」。核心困擾非學業本身，而是對母親付出的愧疚與自我價值低落。</div>
+        <div class="field-label">臨床觀察 CLINICAL OBSERVATIONS</div>
+        <div class="field-content">外觀：制服不整，書包用丟的方式放置。情緒：初期以玩笑掩飾（防衛機制），後期談及母親時眼眶泛紅但強忍。語言：語速在輕鬆話題時正常，觸及核心議題時明顯放慢。</div>
+        <div class="field-label">風險評估 RISK ASSESSMENT</div>
+        <div class="field-content">
+          自殺意念：被動型（passive SI）——「覺得不在的話媽媽比較輕鬆」，否認主動計畫。<br>
+          保護因子：${usedSilence || usedNote ? '對諮商師建立初步信任、' : ''}對母親有強烈情感連結、願意回診。<br>
+          風險因子：青少年男性、社會退縮、睡眠不穩、家庭支持有限。<br>
+          <span class="risk-badge risk-moderate">整體風險等級：中度 Moderate</span>
+        </div>
+        <div class="field-label">晤談歷程 SESSION PROCESS</div>
+        <div class="field-content">${sessionSummary}</div>
+        <div class="field-label">個案概念化 CASE CONCEPTUALIZATION</div>
+        <div class="field-content">${conceptNote}</div>
+        <div class="field-label">處遇方向 TREATMENT DIRECTION</div>
+        <div class="field-content">建議每週一次追蹤晤談。初期目標：穩固治療同盟。中期：協助個案辨識愧疚感的來源，與「被愛」和「不配」之間的矛盾。視情況評估是否納入母親進行家庭會談。</div>
+      </div>
+      <div class="review-section">
+        <h4 style="color:var(--cyan);font-size:.9rem;margin-bottom:.6rem">🔍 諮商師自我覺察 Counselor Self-Reflection</h4>
+        <p style="color:var(--text-dim);font-size:.82rem;margin-bottom:.8rem">在這場晤談中，你最大的體會是什麼？</p>
+        <button class="reflect-btn" onclick="selectReflection('ep1',0,this)">「沉默比話語更需要勇氣——面對不說話的個案，最難的不是找到對的問題，而是忍住不填滿空白。」</button>
+        <button class="reflect-btn" onclick="selectReflection('ep1',1,this)">「我差點把自己的焦慮當成他的問題——聽到『想死』時我急著想確認安全，但那份急迫有一部分是我的，不是他的。」</button>
+        <button class="reflect-btn" onclick="selectReflection('ep1',2,this)">「建立關係就是介入本身——他願意坐在這裡五十分鐘，對一個不信任大人的青少年來說，已經是一件事了。」</button>
+        <div id="ep1-reflect-feedback" class="reflect-feedback"></div>
+      </div>
+      <div style="text-align:center;margin-top:1.5rem">
+        <button class="choice-btn" style="display:inline-block;width:auto;padding:.7rem 2rem" onclick="goScene('hub')">回到諮商室</button>
+      </div>
+    `;
+    container.style.opacity = '1';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 },
 
 // ===================== 陳雅婷 =====================
@@ -1047,7 +1147,67 @@ ep2_final: {
     { type:'narration', text:'門關上了。' },
     { type:'narration', text:'你的手不自覺地碰了一下口袋裡的手機。' },
   ],
-  choices: [{ text:'回到諮商室', next:'hub' }]
+  choices: [{ text:'撰寫結案摘要', next:'ep2_debrief' }]
+},
+
+ep2_debrief: {
+  mood:'end',
+  render(container) {
+    const usedSilence = state.path.includes('ep2_silence');
+    const usedNote = state.path.includes('ep2_end_note');
+    const usedDeflect = state.path.includes('ep2_deflect1');
+    const exploredDaughter = state.path.includes('ep2_da') || state.path.includes('ep2_db') || state.path.includes('ep2_dc');
+
+    let sessionSummary = '';
+    if (usedSilence) sessionSummary = '諮商師於個案情緒湧現時選擇沉默陪伴，未介入或勸導。個案在不被推動的環境中自行抵達核心議題（女兒），並主動表達意願。此為非指導式取向之有效示範。';
+    else if (usedNote) sessionSummary = '諮商師將個案於晤談中散落的線索整合回饋——「畢業典禮」與「邀請卡未寄出」之間的矛盾。個案表現出被看見的震動，首次出現情緒崩潰後的建設性反應。';
+    else if (usedDeflect) sessionSummary = '諮商師於早期階段質疑個案是否真的不怕死，引發個案防衛反應。後經策略調整，逐步修復同盟關係。此個案對「被說服」高度敏感，反映過往多次被勸說之疲憊。';
+    else sessionSummary = '諮商師以尊重自主權之態度進行晤談，未試圖勸阻個案之決定。透過探索未完成事務（unfinished business），引導個案辨識出尚未處理的核心議題。';
+
+    let conceptNote = exploredDaughter
+      ? '個案之核心困境並非對死亡的恐懼，而是「告別」的困難——特別是對15歲女兒。個案展現高度的認知整合能力與計畫性，但在情感面上存在顯著的迴避。女兒每日煮飯之行為可能反映女兒已有預感，母女之間存在「雙向的不敢開口」。個案的決定具理性特質，臨床處遇需在風險管理與尊重自主之間取得平衡。'
+      : '個案對自身決定有清晰的敘事架構，表面情緒平穩。但名單與邀請卡等安排中存在未解之矛盾，可能反映未被觸及的情感議題。此面向需於後續晤談中進一步評估。';
+
+    container.innerHTML = `
+      <div class="case-report">
+        <h4>📋 晤談結案摘要 Session Summary</h4>
+        <div class="field-label">個案基本資料 CLIENT DEMOGRAPHICS</div>
+        <div class="field-content">陳雅婷（化名）｜42歲／女性｜前平面設計師｜自行預約・初談</div>
+        <div class="field-label">主訴問題 PRESENTING PROBLEM</div>
+        <div class="field-content">個案自述乳癌第四期，已停止治療，決定於最後階段前自主離開。主訴「想跟人討論接下來的安排」。個案否認此為衝動或憂鬱性決定，強調已思考三個月。</div>
+        <div class="field-label">臨床觀察 CLINICAL OBSERVATIONS</div>
+        <div class="field-content">外觀：衣著整齊，鮮橘色外套，面容消瘦但精神尚可。情緒：自評「平靜」，觀察情緒平板中帶有未表達的哀傷。在談及女兒時出現首次情緒失控——聲音不穩、眼眶泛紅。手部持續翻閱資料夾，顯示控制需求。</div>
+        <div class="field-label">風險評估 RISK ASSESSMENT</div>
+        <div class="field-content">
+          自殺意念：理性自殺意念（rational suicidal ideation）——非衝動、非憂鬱驅動，個案以「提前離開」描述。<br>
+          計畫：有初步方向，拒絕透露細節。時程暗示數週至數月內。<br>
+          保護因子：${usedSilence || usedNote ? '對諮商過程表達正面回饋、' : ''}對女兒有強烈情感連結、對「好好告別」有重視。<br>
+          風險因子：末期疾病、有計畫、社會角色喪失中。<br>
+          <span class="risk-badge risk-high">整體風險等級：高度 High</span><br>
+          <span style="font-size:.78rem;color:var(--text-dim)">註：此個案之風險評估需區辨「末期疾病脈絡下的自主選擇」與「需危機介入之自殺行為」。不宜以標準危機介入模式對待。</span>
+        </div>
+        <div class="field-label">晤談歷程 SESSION PROCESS</div>
+        <div class="field-content">${sessionSummary}</div>
+        <div class="field-label">個案概念化 CASE CONCEPTUALIZATION</div>
+        <div class="field-content">${conceptNote}</div>
+        <div class="field-label">處遇方向 TREATMENT DIRECTION</div>
+        <div class="field-content">本案治療目標非阻止死亡，而是確保決定在充分的心理自由下做出。建議以未完成事務（unfinished business）與意義建構（meaning-making）為工作方向。${exploredDaughter ? '可探索個案是否願意與女兒進行告別會談或書信。' : '需優先評估個案與女兒之間的告別議題。'}需與主治醫師、安寧團隊保持跨專業合作。</div>
+      </div>
+      <div class="review-section">
+        <h4 style="color:var(--cyan);font-size:.9rem;margin-bottom:.6rem">🔍 諮商師自我覺察 Counselor Self-Reflection</h4>
+        <p style="color:var(--text-dim);font-size:.82rem;margin-bottom:.8rem">在這場晤談中，你最大的體會是什麼？</p>
+        <button class="reflect-btn" onclick="selectReflection('ep2',0,this)">「我不需要認同她的決定，但我需要理解它——『理解』不等於『同意』，我可以不認同她的選擇，但不能因此停止傾聽。」</button>
+        <button class="reflect-btn" onclick="selectReflection('ep2',1,this)">「她的平靜讓我不安——但我的不安不是她的責任。也許她的平靜是真的，是她用很長時間才抵達的地方。」</button>
+        <button class="reflect-btn" onclick="selectReflection('ep2',2,this)">「有些問題沒有正確答案，但仍然值得好好問——帶著問題坐在她面前，比帶著答案坐在她面前，可能更有幫助。」</button>
+        <div id="ep2-reflect-feedback" class="reflect-feedback"></div>
+      </div>
+      <div style="text-align:center;margin-top:1.5rem">
+        <button class="choice-btn" style="display:inline-block;width:auto;padding:.7rem 2rem" onclick="goScene('hub')">回到諮商室</button>
+      </div>
+    `;
+    container.style.opacity = '1';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 },
 
 // ============================================================
@@ -1057,20 +1217,17 @@ epilogue: {
   mood:'end',
   lines: [
     { type:'narration', text:'諮商室空了。' },
-    { type:'narration', text:'今天你聽了一個男孩說他覺得自己不配活著。' },
-    { type:'narration', text:'你聽了一個女人說她準備好了要死。' },
-    { type:'narration', text:'他們的問題很不一樣。但他們都是第一次被人好好聽完。' },
+    { type:'narration', text:'你把兩份資料夾收進抽屜。' },
     { type:'narration', text:'你看了一下時鐘。該下班了。' },
     { type:'narration', text:'你把那盆快枯死的盆栽澆了水。' },
-    { type:'narration', text:'你拿起手機。通訊錄裡有一個號碼。你很久很久沒撥出去了。' },
-    { type:'narration', text:'⋯⋯' },
-    { type:'narration', text:'你按下了撥出鍵。' },
-    { type:'narration', text:'嘟——嘟——嘟——' },
-    { type:'narration', text:'「⋯⋯喂？」' },
-    { type:'narration', text:'「⋯⋯媽。」' },
-    { type:'narration', text:'你的聲音比你預期的還小。' },
+    { type:'narration', text:'站起來的時候，你看了一眼自己的筆記本。' },
+    { type:'narration', text:'⋯⋯今天你聽了兩個人說話。' },
+    { type:'narration', text:'一個覺得自己不配活著。一個準備好了要走。' },
+    { type:'narration', text:'你沒有拯救任何人。你只是坐在那裡，聽完了。' },
+    { type:'narration', text:'也許這樣就夠了。也許不夠。你不知道。' },
+    { type:'narration', text:'你關了燈。鎖了門。明天還有別的資料夾在等你。' },
   ],
-  choices: [{ text:'翻開你的筆記', next:'review' }]
+  choices: [{ text:'查看總結', next:'review' }]
 },
 
 // ============================================================
@@ -1121,108 +1278,86 @@ review: {
       insight2 = '一個看起來什麼都準備好的人，其實有一個她不敢打開的資料夾。死亡本身不是最難的——好好說再見才是。';
     else insight2 = '你沒有勸陳雅婷活下去。你做了更重要的事——你讓她發現自己還有一件事沒完成。';
 
+    // Choice statistics (mock data — shows what % picked each opening)
+    const myEp1Choice = state.path.includes('path_a1') ? 'A' : state.path.includes('path_b1') ? 'B' : 'C';
+    const myEp2Choice = state.path.includes('ep2_pa1') ? 'A' : state.path.includes('ep2_pb1') ? 'B' : 'C';
+    const myEp1End = state.path.includes('ep1_end_a') ? 'A' : state.path.includes('ep1_end_b') ? 'B' : state.path.includes('ep1_end_c') ? 'C' : state.path.includes('ep1_silence') ? 'D' : state.path.includes('ep1_end_note') ? '📋' : '?';
+    const myEp2End = state.path.includes('ep2_end_a') ? 'A' : state.path.includes('ep2_end_b') ? 'B' : state.path.includes('ep2_end_c') ? 'C' : state.path.includes('ep2_silence') ? 'D' : state.path.includes('ep2_end_note') ? '📋' : '?';
+
+    function statRow(label, pct, color, isYou) {
+      return `<div class="choice-stat">
+        <span class="cs-label">${isYou ? '<strong style="color:var(--amber)">► </strong>' : ''}${label}</span>
+        <div class="cs-bar"><div class="cs-fill" style="background:var(--${color})" data-width="${pct}"></div></div>
+        <span class="cs-pct">${pct}%</span>
+      </div>`;
+    }
+
     container.innerHTML = `
       <div class="review-section">
-        <h3>📋 諮商筆記回顧</h3>
+        <h3>📋 諮商筆記</h3>
         <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:1rem">你花了約 ${duration||'幾'} 分鐘，記下了 ${noteCount} 條筆記。</p>
         ${notesHTML}
       </div>
       <div class="review-section">
-        <div class="insight-card">
-          <div class="insight-title">🔍 Episode 1 覺察</div>
-          <div class="insight-body">${insight1}</div>
-        </div>
-        <div class="insight-card">
-          <div class="insight-title">🔍 Episode 2 覺察</div>
-          <div class="insight-body">${insight2}</div>
+        <h3>📊 其他玩家怎麼選</h3>
+        <p style="color:var(--text-dim);font-size:.82rem;margin-bottom:.8rem">你的選擇用 ► 標示</p>
+        <p style="color:var(--text-dim);font-size:.78rem;margin:.6rem 0 .3rem">林宥成 — 開場選擇</p>
+        ${statRow('A. 直球切入「腦袋在想什麼？」', 38, 'amber', myEp1Choice==='A')}
+        ${statRow('B. 開玩笑「導師反應很誇張？」', 41, 'amber', myEp1Choice==='B')}
+        ${statRow('C. 聊成績「什麼科目？」', 21, 'amber', myEp1Choice==='C')}
+        <p style="color:var(--text-dim);font-size:.78rem;margin:.8rem 0 .3rem">林宥成 — 結局選擇</p>
+        ${statRow('A. 鼓勵他跟媽說', 24, 'green', myEp1End==='A')}
+        ${statRow('B. 指出他在乎', 22, 'green', myEp1End==='B')}
+        ${statRow('C. 點出愧疚', 19, 'green', myEp1End==='C')}
+        ${statRow('D. 沉默', 23, 'green', myEp1End==='D')}
+        ${statRow('📋 筆記引用', 12, 'cyan', myEp1End==='📋')}
+        <p style="color:var(--text-dim);font-size:.78rem;margin:.8rem 0 .3rem">陳雅婷 — 開場選擇</p>
+        ${statRow('A.「你來找我聊什麼？」', 35, 'pink', myEp2Choice==='A')}
+        ${statRow('B.「剩下兩成是什麼？」', 37, 'pink', myEp2Choice==='B')}
+        ${statRow('C.「你一直在笑」', 28, 'pink', myEp2Choice==='C')}
+        <p style="color:var(--text-dim);font-size:.78rem;margin:.8rem 0 .3rem">陳雅婷 — 結局選擇</p>
+        ${statRow('A. 指出她在逃', 21, 'green', myEp2End==='A')}
+        ${statRow('B. 煮飯的女兒', 25, 'green', myEp2End==='B')}
+        ${statRow('C. 空椅子', 18, 'green', myEp2End==='C')}
+        ${statRow('D. 沉默', 22, 'green', myEp2End==='D')}
+        ${statRow('📋 筆記引用', 14, 'cyan', myEp2End==='📋')}
+      </div>
+      <div style="text-align:center;margin:1.5rem 0;padding:1rem;border:1px solid var(--choice-border);border-radius:8px">
+        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.5rem">如果你現在需要有人聽你說話：</p>
+        <p style="font-size:1rem">
+          <a href="tel:1925" style="color:var(--amber);text-decoration:none">安心專線 1925</a>（24小時免費）<br>
+          <a href="tel:1995" style="color:var(--amber);text-decoration:none">生命線 1995</a>｜
+          <a href="tel:1980" style="color:var(--amber);text-decoration:none">張老師 1980</a>
+        </p>
+      </div>
+      <div class="review-section">
+        <h3>🖼️ 匯出筆記卡片</h3>
+        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.8rem">把你的筆記變成一張圖片卡片，還可以手繪塗鴉。</p>
+        <div class="export-ep-btns">
+          <button class="export-ep-btn" onclick="openExport(1)">林宥成</button>
+          <button class="export-ep-btn" onclick="openExport(2)">陳雅婷</button>
         </div>
       </div>
       <div class="review-section">
-        <h3>📊 與其他玩家的比較</h3>
-        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:1rem">在所有完成這兩場諮商的人之中——</p>
-        <div class="stat-bar"><span class="label">「林宥成其實不是想死」</span><div class="bar"><div class="bar-fill amber" data-width="87"></div></div><span class="pct">87%</span></div>
-        <div class="stat-bar"><span class="label">「陳雅婷讓我重新想了死亡」</span><div class="bar"><div class="bar-fill pink" data-width="79"></div></div><span class="pct">79%</span></div>
-        <div class="stat-bar"><span class="label">「我想到了自己身邊的人」</span><div class="bar"><div class="bar-fill cyan" data-width="73"></div></div><span class="pct">73%</span></div>
-        <div class="stat-bar"><span class="label">「最後醫生打電話讓我哭了」</span><div class="bar"><div class="bar-fill green" data-width="61"></div></div><span class="pct">61%</span></div>
+        <h3>🗺️ 你的探索</h3>
+        <div class="explore-stat">${buildExploreHTML()}</div>
       </div>
       <div class="review-section">
-        <h3>✍️ 最後一件事</h3>
-        <p style="color:var(--text);font-size:.92rem;margin-bottom:.8rem">
-          作為一名諮商師，你今天學到了什麼？<br>
-          <span style="color:var(--text-dim);font-size:.82rem">（你的回答會被匿名收錄，讓下一個玩家看到。）</span>
-        </p>
-        <div class="input-area">
-          <textarea id="reflection-input" placeholder="寫下你的想法⋯⋯"></textarea>
-          <button class="submit-btn" onclick="submitReflection()">送出</button>
+        <h3>🔄 再來一次？</h3>
+        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.8rem">不同的選擇會聽到不同的故事。有些選項只有記了筆記才能解鎖。</p>
+        <div class="replay-btns">
+          <button class="replay-btn" onclick="replayEp(1)">重玩 — 林宥成</button>
+          <button class="replay-btn" onclick="replayEp(2)">重玩 — 陳雅婷</button>
         </div>
       </div>
-      <div id="after-reflection" style="display:none">
-        <div class="review-section">
-          <h3>🌏 其他諮商師說⋯⋯</h3>
-          <div class="insight-card" style="border-left:3px solid var(--cyan)">
-            <div class="insight-body" style="font-size:.88rem">「原來想死的人不一定是不想活，只是覺得活著太對不起愛的人。」</div>
-          </div>
-          <div class="insight-card" style="border-left:3px solid var(--green)">
-            <div class="insight-body" style="font-size:.88rem">「我弟也會說想死。以前覺得他在鬧，現在覺得我應該先聽他說完。」</div>
-          </div>
-          <div class="insight-card" style="border-left:3px solid var(--pink)">
-            <div class="insight-body" style="font-size:.88rem">「陳雅婷不是怕死。她是怕女兒以為自己被拋棄了。那是完全不同的事。」</div>
-          </div>
-          <div class="insight-card" style="border-left:3px solid var(--amber)">
-            <div class="insight-body" style="font-size:.88rem">「做完之後打給我媽了。」</div>
-          </div>
-          <div class="insight-card" style="border-left:3px solid var(--red)">
-            <div class="insight-body" style="font-size:.88rem">「第二個案例讓我學到——有些人你不能救，但你可以幫她走得完整一點。」</div>
-          </div>
-        </div>
-        <div class="final-message">
-          <p>
-            今天你聽了兩個人說話。<br>
-            一個以為自己想死，其實是不知道怎麼活。<br>
-            一個決定要死，但還有一件事沒做完。<br><br>
-            死亡不一定是需要被阻止的事。<br>
-            但每個人都值得被好好聽完。<br><br>
-            <span style="color:var(--amber);font-size:1.05rem;font-weight:600">——包括你自己。</span>
-          </p>
-        </div>
-        <div style="text-align:center;margin:1.5rem 0;padding:1rem;border:1px solid var(--choice-border);border-radius:8px">
-          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.5rem">如果你現在需要有人聽你說話：</p>
-          <p style="font-size:1rem">
-            <a href="tel:1925" style="color:var(--amber);text-decoration:none">安心專線 1925</a>（24小時免費）<br>
-            <a href="tel:1995" style="color:var(--amber);text-decoration:none">生命線 1995</a>｜
-            <a href="tel:1980" style="color:var(--amber);text-decoration:none">張老師 1980</a>
-          </p>
-        </div>
-        <div class="review-section">
-          <h3>🖼️ 匯出筆記卡片</h3>
-          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.8rem">把你的筆記變成一張圖片卡片，還可以手繪塗鴉。</p>
-          <div class="export-ep-btns">
-            <button class="export-ep-btn" onclick="openExport(1)">Episode 1 — 林宥成</button>
-            <button class="export-ep-btn" onclick="openExport(2)">Episode 2 — 陳雅婷</button>
-          </div>
-        </div>
-        <div class="review-section">
-          <h3>🗺️ 你的探索</h3>
-          <div class="explore-stat">${buildExploreHTML()}</div>
-        </div>
-        <div class="review-section">
-          <h3>🔄 再來一次？</h3>
-          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.8rem">不同的選擇會聽到不同的故事。有些選項只有記了筆記才能解鎖。</p>
-          <div class="replay-btns">
-            <button class="replay-btn" onclick="replayEp(1)">重玩 EP1 — 林宥成</button>
-            <button class="replay-btn" onclick="replayEp(2)">重玩 EP2 — 陳雅婷</button>
-          </div>
-        </div>
-        <button class="restart-btn" onclick="location.reload()">從頭開始（重置全部）</button>
-        <p style="text-align:center;color:var(--text-dim);font-size:.75rem;margin:1rem 0 2rem">
-          心理醫生的一天 — 生死課<br>
-          Episode 1：林宥成 ｜ Episode 2：陳雅婷<br>
-          本遊戲為生命教育用途，不具備心理診斷功能。
-        </p>
-      </div>
+      <button class="restart-btn" onclick="location.reload()">從頭開始（重置全部）</button>
+      <p style="text-align:center;color:var(--text-dim);font-size:.75rem;margin:1rem 0 2rem">
+        心理醫生的一天 — 生死課<br>
+        本遊戲為生命教育用途，不具備心理診斷功能。
+      </p>
     `;
     setTimeout(() => {
-      document.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.width + '%'; });
+      document.querySelectorAll('.cs-fill').forEach(b => { b.style.width = b.dataset.width + '%'; });
     }, 500);
   }
 }
@@ -1441,7 +1576,7 @@ function createLineElement(line) {
       if (el.classList.contains('noted')) return;
       if (addNote(line.text, line.speaker || null, line.type === 'observation')) {
         el.classList.add('noted', 'animate-pop');
-        setTimeout(() => el.classList.remove('animate-pop'), 300);
+        setTimeout(() => el.classList.remove('animate-pop'), 500);
         // Show note stat
         const pct = getNoteStat(line.text);
         const stat = document.createElement('div');
@@ -1449,6 +1584,16 @@ function createLineElement(line) {
         stat.textContent = `${pct}% 的玩家也記下了這句`;
         el.appendChild(stat);
         setTimeout(() => stat.classList.add('show'), 50);
+        // First note toast — explain that notes unlock choices
+        if (state.notebook.length === 1 && !state._firstNoteToastShown) {
+          state._firstNoteToastShown = true;
+          const toast = document.createElement('div');
+          toast.className = 'note-toast';
+          toast.innerHTML = '📋 筆記已記錄<br><span style="font-size:.75rem;color:var(--text)">記下的內容可能會在關鍵時刻解鎖新的回應方式</span>';
+          document.body.appendChild(toast);
+          setTimeout(() => toast.classList.add('show'), 100);
+          setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 4000);
+        }
       }
     });
   }
@@ -1478,18 +1623,32 @@ function renderChoices(choices) {
   });
 }
 
-function submitReflection() {
-  const input = document.getElementById('reflection-input');
-  const text = input.value.trim();
-  if (!text) { input.placeholder = '隨便寫什麼都好⋯⋯就算只是一個字。'; input.focus(); return; }
-  state.playerReflection = text;
-  document.getElementById('after-reflection').style.display = 'block';
-  input.disabled = true;
-  document.querySelector('.submit-btn').style.display = 'none';
-  setTimeout(() => {
-    document.getElementById('after-reflection').scrollIntoView({ behavior:'smooth', block:'start' });
-  }, 200);
+const REFLECT_FEEDBACK = {
+  ep1: [
+    '在青少年工作中，能承受沉默的諮商師往往比善於提問的諮商師更快建立信任。你正在發展一項重要的臨床能力——忍受不確定（tolerance of ambiguity）。',
+    '覺察反移情（countertransference）是諮商師最重要的工具之一。你的焦慮是合理的——但能區分「我需要他安全」和「他需要被聽見」，是臨床判斷力的展現。',
+    '在初談階段，治療同盟（therapeutic alliance）本身就是最有效的介入。研究一再顯示，關係品質對治療結果的預測力大於任何特定技術。你今天沒有「什麼都沒做」。',
+  ],
+  ep2: [
+    '這是末期照護中最困難的臨床立場——既不推動也不阻止，而是陪伴個案在做出決定的過程中看見自己所有的面向。你正在實踐 Carl Rogers 所說的「無條件正向關懷」最不容易的版本。',
+    '當個案的情緒反應不符合我們的預期時，我們容易將那份平靜病理化（pathologize）。你的覺察保護了你不去做一件有害的事：把自己的不舒服投射成她的「不正常」。',
+    '末期個案的倫理困境沒有教科書標準答案。能夠承受倫理灰色地帶（ethical grey zone）而不急於行動，是資深臨床工作者的特質。',
+  ]
+};
+
+function selectReflection(ep, idx, btn) {
+  const container = btn.parentElement;
+  container.querySelectorAll('.reflect-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.style.pointerEvents = 'none';
+    b.style.opacity = b === btn ? '1' : '.4';
+  });
+  btn.classList.add('selected');
+  const fb = document.getElementById(`${ep}-reflect-feedback`);
+  fb.innerHTML = `<span style="color:var(--cyan);font-size:.75rem">督導回饋 Supervisor Feedback</span><br>${REFLECT_FEEDBACK[ep][idx]}`;
+  setTimeout(() => fb.classList.add('show'), 100);
 }
+
 
 // ============================================================
 //  EXPORT CARD + FREE DRAWING
