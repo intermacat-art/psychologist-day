@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>心理醫生的一天 — 生死課</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#12121e;--bg3:#1a1a2e;
+  --text:#c9d1d9;--text-bright:#f0f6fc;--text-dim:#6b7280;
+  --amber:#f59e0b;--amber-dim:#92400e;--amber-bg:rgba(245,158,11,.08);
+  --cyan:#22d3ee;--cyan-dim:#0e7490;
+  --red:#f87171;--green:#34d399;--pink:#f472b6;
+  --note-bg:rgba(245,158,11,.12);--note-border:#b45309;
+  --choice-bg:#16162a;--choice-border:#2a2a4a;--choice-hover:#222244;
+}
+html{font-size:16px;background:var(--bg)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;
+  color:var(--text);background:var(--bg);
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  line-height:1.8;overflow-x:hidden;
+}
+#app{
+  flex:1;display:flex;flex-direction:column;
+  max-width:680px;width:100%;margin:0 auto;
+  padding:1rem 1.2rem 6rem;position:relative;
+}
+.braille-art{
+  font-family:'Courier New',monospace;
+  color:var(--cyan);text-align:center;
+  line-height:1.1;font-size:14px;
+  white-space:pre;margin:1.5rem 0;
+  opacity:0;animation:fadeIn .8s ease forwards;
+  text-shadow:0 0 20px rgba(34,211,238,.2);
+  user-select:none;
+}
+#content{min-height:40vh}
+.scene-line{
+  opacity:0;transform:translateY(8px);
+  transition:opacity .5s ease,transform .5s ease;
+  margin-bottom:.6rem;padding:.4rem 0;
+}
+.scene-line.visible{opacity:1;transform:translateY(0)}
+.scene-line.narration{color:var(--text-dim);font-style:italic;font-size:.92rem}
+.scene-line.system{color:var(--text-dim);text-align:center;font-size:.85rem;letter-spacing:.08em}
+.scene-line.dialogue .speaker{color:var(--amber);font-weight:600;font-size:.85rem;display:block;margin-bottom:.15rem}
+.scene-line.dialogue .text{color:var(--text-bright)}
+.scene-line.quote{
+  border-left:3px solid var(--amber-dim);padding:.8rem 1rem;margin:.8rem 0;
+  background:var(--amber-bg);border-radius:0 8px 8px 0;color:var(--text);font-size:.95rem;
+}
+.scene-line.file-info{
+  background:var(--bg2);border:1px solid var(--choice-border);
+  border-radius:8px;padding:1rem 1.2rem;margin:.5rem 0;font-size:.9rem;
+}
+.scene-line.file-info .label{color:var(--text-dim);font-size:.8rem}
+.scene-line.file-info .value{color:var(--text-bright)}
+.scene-line.notable{
+  cursor:pointer;position:relative;
+  padding:.5rem .8rem .5rem 1rem;
+  border-left:3px solid transparent;border-radius:0 6px 6px 0;
+  transition:all .3s ease;
+}
+.scene-line.notable:not(.observation)::before{
+  content:'';position:absolute;left:-20px;top:50%;
+  transform:translateY(-50%);width:14px;height:14px;
+  border:1.5px solid var(--text-dim);border-radius:3px;
+  transition:all .3s ease;opacity:.4;
+}
+.scene-line.notable:hover{background:rgba(245,158,11,.05);border-left-color:var(--amber-dim)}
+.scene-line.notable:not(.observation):hover::before{opacity:.8;border-color:var(--amber)}
+.scene-line.noted:not(.observation){background:var(--note-bg);border-left-color:var(--amber)}
+.scene-line.noted:not(.observation)::before{background:var(--amber);border-color:var(--amber);opacity:1}
+.scene-line.noted:not(.observation)::after{
+  content:'✓';position:absolute;left:-19px;top:50%;
+  transform:translateY(-50%);color:var(--bg);font-size:10px;font-weight:700;
+}
+.scene-line.observation{
+  color:var(--cyan-dim);font-size:.84rem;font-style:italic;
+  padding:.4rem .8rem;margin:.3rem 0;
+  border-left:2px solid rgba(14,116,144,.3);
+  background:rgba(34,211,238,.04);border-radius:0 6px 6px 0;
+}
+.scene-line.observation::before{content:'🔍 ';font-style:normal;font-size:.75rem}
+.scene-line.observation.notable{cursor:pointer;border-left:2px solid rgba(14,116,144,.3)}
+.scene-line.observation.notable:hover{background:rgba(34,211,238,.08);border-left-color:var(--cyan)}
+.scene-line.observation.noted{background:rgba(34,211,238,.1);border-left-color:var(--cyan)}
+.note-stat{
+  font-size:.72rem;color:var(--text-dim);margin-top:.15rem;padding-left:1rem;
+  opacity:0;transform:translateY(-4px);
+  transition:opacity .4s ease,transform .4s ease;
+}
+.note-stat.show{opacity:1;transform:translateY(0)}
+.note-hint{color:var(--text-dim);font-size:.75rem;text-align:center;margin:.5rem 0 1rem;opacity:0;animation:fadeIn .5s ease .5s forwards}
+#choices{margin-top:1.5rem}
+.choice-btn{
+  display:block;width:100%;text-align:left;
+  background:var(--choice-bg);color:var(--text-bright);
+  border:1px solid var(--choice-border);border-radius:10px;
+  padding:.9rem 1.2rem;margin-bottom:.7rem;
+  font-size:.95rem;line-height:1.6;
+  cursor:pointer;transition:all .25s ease;font-family:inherit;
+}
+.choice-btn:hover{background:var(--choice-hover);border-color:var(--amber-dim);transform:translateX(4px)}
+.choice-btn:active{transform:translateX(2px);opacity:.8}
+.choice-btn .choice-label{color:var(--amber);font-weight:600;margin-right:.5rem}
+#notebook-toggle{
+  position:fixed;top:1rem;right:1rem;z-index:100;
+  background:var(--bg2);border:1px solid var(--choice-border);
+  border-radius:50%;width:48px;height:48px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .3s ease;font-size:1.2rem;color:var(--amber);
+}
+#notebook-toggle:hover{border-color:var(--amber);background:var(--bg3)}
+#notebook-toggle .count{
+  position:absolute;top:-4px;right:-4px;
+  background:var(--amber);color:var(--bg);
+  font-size:.7rem;font-weight:700;
+  width:20px;height:20px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:scale(0);transition:all .3s ease;
+}
+#notebook-toggle .count.show{opacity:1;transform:scale(1)}
+#notebook-panel{
+  position:fixed;top:0;right:-100%;width:min(360px,85vw);height:100%;
+  background:var(--bg2);border-left:1px solid var(--choice-border);
+  z-index:200;transition:right .35s ease;display:flex;flex-direction:column;overflow:hidden;
+}
+#notebook-panel.open{right:0}
+#notebook-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:199;opacity:0;pointer-events:none;transition:opacity .35s ease;
+}
+#notebook-overlay.show{opacity:1;pointer-events:auto}
+.nb-header{padding:1.2rem;border-bottom:1px solid var(--choice-border);display:flex;align-items:center;justify-content:space-between}
+.nb-header h3{color:var(--amber);font-size:1rem;font-weight:600}
+.nb-close{background:none;border:none;color:var(--text-dim);font-size:1.5rem;cursor:pointer;padding:.2rem .5rem}
+.nb-close:hover{color:var(--text)}
+.nb-body{flex:1;overflow-y:auto;padding:1rem}
+.nb-empty{color:var(--text-dim);text-align:center;padding:2rem 1rem;font-size:.9rem}
+.nb-item{
+  padding:.6rem .8rem;margin-bottom:.5rem;
+  background:var(--amber-bg);border-left:3px solid var(--amber);
+  border-radius:0 6px 6px 0;font-size:.88rem;
+  color:var(--text-bright);line-height:1.6;animation:slideInRight .3s ease;
+}
+#hotline{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--bg2);border-top:1px solid var(--choice-border);
+  padding:.5rem 1rem;text-align:center;font-size:.75rem;color:var(--text-dim);z-index:50;
+}
+#hotline a{color:var(--amber);text-decoration:none;margin:0 .4rem}
+#hotline a:hover{text-decoration:underline}
+.review-section{margin:1.5rem 0}
+.review-section h3{color:var(--amber);font-size:1rem;margin-bottom:.8rem}
+.stat-bar{display:flex;align-items:center;margin-bottom:.8rem;gap:.8rem}
+.stat-bar .label{flex:0 0 auto;font-size:.85rem;color:var(--text);min-width:180px}
+.stat-bar .bar{flex:1;height:24px;background:var(--bg3);border-radius:12px;overflow:hidden}
+.stat-bar .bar-fill{height:100%;border-radius:12px;transition:width 1.5s ease;width:0}
+.stat-bar .bar-fill.amber{background:linear-gradient(90deg,var(--amber-dim),var(--amber))}
+.stat-bar .bar-fill.cyan{background:linear-gradient(90deg,var(--cyan-dim),var(--cyan))}
+.stat-bar .bar-fill.green{background:linear-gradient(90deg,#065f46,var(--green))}
+.stat-bar .bar-fill.pink{background:linear-gradient(90deg,#9d174d,var(--pink))}
+.stat-bar .pct{font-size:.8rem;color:var(--text-dim);min-width:40px;text-align:right}
+.insight-card{background:var(--bg3);border:1px solid var(--choice-border);border-radius:10px;padding:1.2rem;margin:.8rem 0}
+.insight-card .insight-title{color:var(--cyan);font-size:.85rem;margin-bottom:.5rem}
+.insight-card .insight-body{color:var(--text-bright);font-size:.92rem;line-height:1.8}
+.final-message{text-align:center;margin:2rem 0;padding:1.5rem;border:1px solid var(--amber-dim);border-radius:12px;background:var(--amber-bg)}
+.final-message p{color:var(--text-bright);font-size:1rem;line-height:2}
+.restart-btn{
+  display:block;margin:2rem auto;background:none;border:1px solid var(--choice-border);
+  color:var(--text-dim);padding:.7rem 2rem;border-radius:8px;
+  cursor:pointer;font-size:.9rem;font-family:inherit;transition:all .3s ease;
+}
+.restart-btn:hover{border-color:var(--amber);color:var(--amber)}
+.title-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;text-align:center}
+.title-screen h1{font-size:clamp(1.8rem,5vw,2.6rem);color:var(--text-bright);font-weight:700;margin:.5rem 0;letter-spacing:.05em}
+.title-screen .subtitle{color:var(--text-dim);font-size:clamp(.85rem,2.5vw,1rem);margin-bottom:2rem}
+.start-btn{
+  background:none;border:2px solid var(--amber);color:var(--amber);
+  padding:.8rem 3rem;border-radius:8px;font-size:1.1rem;cursor:pointer;
+  font-family:inherit;transition:all .3s ease;letter-spacing:.1em;
+}
+.start-btn:hover{background:var(--amber);color:var(--bg)}
+.disclaimer{margin-top:2.5rem;padding:1rem;border:1px solid var(--choice-border);border-radius:8px;font-size:.78rem;color:var(--text-dim);line-height:1.8;max-width:400px}
+.input-area{margin:1rem 0}
+.input-area textarea{
+  width:100%;background:var(--bg2);border:1px solid var(--choice-border);
+  color:var(--text-bright);border-radius:8px;padding:.8rem;
+  font-family:inherit;font-size:.9rem;resize:vertical;min-height:80px;line-height:1.6;
+}
+.input-area textarea:focus{outline:none;border-color:var(--amber-dim)}
+.input-area .submit-btn{
+  margin-top:.5rem;background:var(--amber);color:var(--bg);
+  border:none;padding:.6rem 1.5rem;border-radius:6px;
+  cursor:pointer;font-family:inherit;font-size:.9rem;transition:opacity .2s;
+}
+.input-area .submit-btn:hover{opacity:.85}
+.ep-divider{text-align:center;margin:2rem 0;padding:2rem 0}
+.ep-divider .ep-num{color:var(--text-dim);font-size:.8rem;letter-spacing:.3em;text-transform:uppercase}
+.ep-divider .ep-name{color:var(--text-bright);font-size:1.3rem;margin:.3rem 0;font-weight:600}
+.ep-divider .ep-desc{color:var(--text-dim);font-size:.85rem}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes notePop{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+.animate-pop{animation:notePop .3s ease}
+@media(max-width:480px){
+  #app{padding:.8rem .8rem 5rem}
+  .scene-line.notable{padding-left:.6rem}
+  .scene-line.notable:not(.observation)::before{left:-16px;width:12px;height:12px}
+  .scene-line.noted:not(.observation)::after{left:-15px;font-size:9px}
+  .stat-bar{flex-wrap:wrap;gap:.3rem}
+  .stat-bar .label{min-width:100%;font-size:.8rem}
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--choice-border);border-radius:3px}
+/* silence choice */
+.choice-btn.silence{border-style:dashed;color:var(--text-dim);font-style:italic;text-align:center}
+.choice-btn.silence:hover{color:var(--text-bright);border-color:var(--text-dim)}
+/* notebook-powered choice */
+.choice-btn.notebook-ref{border-color:var(--cyan-dim);border-width:2px;position:relative}
+.choice-btn.notebook-ref .choice-label{color:var(--cyan)}
+.choice-btn.notebook-ref:hover{border-color:var(--cyan);background:rgba(34,211,238,.06)}
+.choice-btn.notebook-ref::after{content:'筆記';position:absolute;top:-.5rem;right:.6rem;font-size:.65rem;color:var(--cyan);background:var(--bg);padding:0 .4rem}
+/* character card */
+.char-card{
+  display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;
+  border-radius:12px;margin:1rem 0;border:1px solid;
+  opacity:0;animation:fadeIn .8s ease forwards;
+}
+.char-card.ep1{background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.15)}
+.char-card.ep2{background:rgba(245,158,11,.06);border-color:rgba(245,158,11,.15)}
+.char-avatar{
+  width:56px;height:56px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;font-weight:700;color:var(--text-bright);
+  flex-shrink:0;letter-spacing:.1em;
+}
+.char-card.ep1 .char-avatar{background:rgba(100,116,139,.18);border:2px solid rgba(100,116,139,.3)}
+.char-card.ep2 .char-avatar{background:rgba(245,158,11,.15);border:2px solid rgba(245,158,11,.25)}
+.char-info .char-name{font-weight:600;color:var(--text-bright);font-size:.95rem}
+.char-info .char-sub{font-size:.78rem;color:var(--text-dim);margin-top:.15rem}
+.char-info .char-traits{font-size:.8rem;color:var(--text-dim);margin-top:.3rem;line-height:1.5}
+.char-traits span{display:inline-block;background:var(--bg3);padding:.1rem .5rem;border-radius:4px;margin:.15rem .3rem .15rem 0;font-size:.72rem}
+/* scene mood ambient */
+#app{transition:box-shadow 1.5s ease}
+#app[data-mood="cold"]{box-shadow:inset 0 120px 120px -90px rgba(100,116,139,.07)}
+#app[data-mood="warm"]{box-shadow:inset 0 120px 120px -90px rgba(245,158,11,.05)}
+#app[data-mood="tense"]{box-shadow:inset 0 120px 120px -90px rgba(248,113,113,.06)}
+#app[data-mood="quiet"]{box-shadow:inset 0 120px 120px -90px rgba(34,211,238,.04)}
+#app[data-mood="end"]{box-shadow:inset 0 120px 120px -90px rgba(245,158,11,.08)}
+/* notebook unlock hint */
+.unlock-hint{
+  text-align:center;font-size:.78rem;color:var(--cyan);
+  margin:.4rem 0;opacity:0;animation:fadeIn .6s ease .3s forwards;
+}
+/* replay buttons */
+.replay-btns{display:flex;gap:.8rem;flex-wrap:wrap;margin:1rem 0}
+.replay-btn{
+  flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--choice-border);
+  color:var(--text);padding:.7rem;border-radius:8px;cursor:pointer;
+  font-family:inherit;font-size:.85rem;text-align:center;transition:all .2s;
+}
+.replay-btn:hover{border-color:var(--amber);color:var(--amber)}
+.explore-stat{font-size:.82rem;color:var(--text-dim);line-height:1.8;margin:.5rem 0}
+.explore-stat .found{color:var(--green)}
+.explore-stat .missed{color:var(--text-dim);opacity:.6}
+/* export modal */
+#export-modal{
+  display:none;position:fixed;inset:0;z-index:300;
+  align-items:center;justify-content:center;background:rgba(0,0,0,.85);
+  flex-direction:column;overflow-y:auto;padding:1rem;
+}
+#export-modal.open{display:flex}
+.export-container{
+  background:var(--bg2);border:1px solid var(--choice-border);border-radius:12px;
+  max-width:420px;width:100%;padding:1rem;display:flex;flex-direction:column;gap:.8rem;
+  max-height:90vh;overflow-y:auto;
+}
+.export-header{display:flex;justify-content:space-between;align-items:center}
+.export-header h3{color:var(--amber);font-size:1rem}
+.export-header button{background:none;border:none;color:var(--text-dim);font-size:1.4rem;cursor:pointer}
+#export-canvas{
+  width:100%;border-radius:8px;cursor:crosshair;
+  touch-action:none;border:1px solid var(--choice-border);
+}
+.draw-tools{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.color-picker{display:flex;gap:.4rem;align-items:center}
+.color-btn{
+  width:28px;height:28px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;transition:border-color .2s;
+}
+.color-btn.active{border-color:var(--text-bright)}
+.color-btn.eraser{background:var(--bg3)!important;font-size:12px;color:var(--text-dim);display:flex;align-items:center;justify-content:center}
+.draw-actions{display:flex;gap:.5rem}
+.draw-actions button{
+  background:var(--bg3);border:1px solid var(--choice-border);color:var(--text);
+  padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem;font-family:inherit;
+}
+.draw-actions .save-btn{background:var(--amber);color:var(--bg);border-color:var(--amber);font-weight:600}
+.export-ep-btns{display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0}
+.export-ep-btn{
+  flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--choice-border);
+  color:var(--text);padding:.6rem;border-radius:8px;cursor:pointer;
+  font-family:inherit;font-size:.85rem;text-align:center;transition:all .2s;
+}
+.export-ep-btn:hover{border-color:var(--amber);color:var(--amber)}
+</style>
+</head>
+<body>
+<div id="app"><div id="content"></div><div id="choices"></div></div>
+<div id="notebook-toggle" onclick="toggleNotebook()" style="display:none">
+  <span>📋</span><span class="count" id="nb-count">0</span>
+</div>
+<div id="notebook-overlay" onclick="toggleNotebook()"></div>
+<div id="notebook-panel">
+  <div class="nb-header"><h3>📋 諮商筆記</h3><button class="nb-close" onclick="toggleNotebook()">&times;</button></div>
+  <div class="nb-body" id="nb-body"><div class="nb-empty">還沒有記錄任何筆記。<br>點擊對話中你覺得重要的句子來記錄。</div></div>
+</div>
+<div id="export-modal">
+  <div class="export-container">
+    <div class="export-header">
+      <h3>📋 筆記卡片</h3>
+      <button onclick="closeExport()">&times;</button>
+    </div>
+    <canvas id="export-canvas"></canvas>
+    <div class="draw-tools">
+      <div class="color-picker">
+        <button class="color-btn active" onclick="setDrawColor(this,'#ffffff')" style="background:#fff"></button>
+        <button class="color-btn" onclick="setDrawColor(this,'#f59e0b')" style="background:#f59e0b"></button>
+        <button class="color-btn" onclick="setDrawColor(this,'#22d3ee')" style="background:#22d3ee"></button>
+        <button class="color-btn" onclick="setDrawColor(this,'#f472b6')" style="background:#f472b6"></button>
+        <button class="color-btn eraser" onclick="setDrawColor(this,'eraser')">⌫</button>
+      </div>
+      <div class="draw-actions">
+        <button onclick="clearDrawing()">清除</button>
+        <button class="save-btn" onclick="saveCard()">儲存圖片</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="hotline">如果你現在需要有人聽你說話：<a href="tel:1925">安心專線 1925</a>｜<a href="tel:1995">生命線 1995</a>｜<a href="tel:1980">張老師 1980</a></div>
+
+<script>
+// ============================================================
+//  BRAILLE ART
+// ============================================================
+const ART = {
+title: `
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣴⠲⢦⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`,
+office: `
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⣿⡇⠉⠉⠉⠉⠉⠉⠉⠉⣿⡇⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⣤⣤⣤⣀⠀⠀⠀⠀⠀⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⣿⡇⠀⠀⠀⠀⠀⣀⣤⣤⣤⠀⠀
+⠀⠀⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⠀⠀
+⠀⠀⠿⠿⠿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⠿⠿⠿⠀⠀`,
+student: `
+    ////^\\\\
+   | ^   ^ |
+  @ (o) (o) @
+   |   <   |
+   |  ___  |
+    \\_____/
+  ____|  |____
+ /    \\__/    \\
+/              \\`,
+woman: `
+ /////////////\\\\\\\\
+(((((((((((((( \\\\\\\\
+))) ~~      ~~  (((
+((( (*)     (*) )))
+)))     <       (((
+((( '\\______/'  )))
+)))\\___________/(((
+       _) (_
+      / \\_/ \\
+     /(     )\\
+    // )___( \\\\
+    \\\\(     )//
+     (       )
+      |  |  |
+       | | |
+       | | |
+      _|_|_|_`,
+revelation: `
+⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⠀⠀⠀⠀
+⠀⠀⠀⣰⣿⣿⣿⣿⡿⠋⠁⠀⠈⠙⢿⣿⣿⣿⣿⣆⠀⠀⠀⠀
+⠀⠀⣾⣿⣿⣿⡿⠋⠀⠀⢀⣤⣤⡀⠀⠀⠙⢿⣿⣿⣷⠀⠀⠀
+⠀⠀⠻⣿⣿⠟⠀⠀⠀⢰⣿⣿⣿⣿⡆⠀⠀⠀⠻⣿⠟⠀⠀⠀
+⠀⠀⠀⠈⠁⠀⠀⠀⠀⠘⢿⣿⣿⡿⠃⠀⠀⠀⠀⠈⠁⠀⠀⠀`,
+chair: `
+⠀⠀⠀⠀⠀⠀⣀⣀⣀⣀⣀⣀⣀⣀⣀⣀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀`,
+ending: `
+⠀⠀⠀⣀⣤⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣤⣀⠀⠀⠀
+⠀⠀⣼⣿⣿⣿⣿⣿⣧⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣧⠀⠀
+⠀⠀⠻⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠻⣿⣿⣿⣿⣿⠟⠀⠀
+⠀⠀⠀⠀⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠀⠀⠀⠀
+⠀⠀⢀⣾⣿⣿⣿⣷⡀⠀⠀⠀⠀⠀⠀⠀⢀⣾⣿⣿⣿⣷⡀⠀⠀⠀
+⠀⠀⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀
+⠀⠀⠀⠀⢸⣿⠀⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠀⣿⡇⠀⠀⠀⠀`
+};
+
+// ============================================================
+//  GAME STATE
+// ============================================================
+const state = {
+  currentScene: null,
+  notebook: [],
+  path: [],
+  startTime: null,
+  playerReflection: '',
+  notebookOpen: false,
+  completed: [],
+};
+
+// ============================================================
+//  SCENE DEFINITIONS
+// ============================================================
+const SCENES = {
+
+// ===================== TITLE =====================
+title: {
+  render(container) {
+    container.innerHTML = `
+      <div class="title-screen">
+        <div class="braille-art">${ART.title}</div>
+        <h1>心理醫生的一天</h1>
+        <div class="subtitle">— 一堂關於生死的初階課 —</div>
+        <div class="subtitle" style="margin-bottom:.5rem;color:var(--text-dim);font-size:.82rem">
+          你是一名心理諮商師。今天是你的第一天。<br>今天有兩位來訪者。
+        </div>
+        <button class="start-btn" onclick="goScene('intro')">開始你的第一天</button>
+        <div class="disclaimer">
+          本遊戲為生命教育互動體驗，不具備心理診斷功能。<br>
+          如果你現在正處於困難中，請撥打安心專線 1925（24小時免費）。
+        </div>
+      </div>`;
+  }
+},
+
+// ===================== INTRO =====================
+intro: {
+  art: ART.office,
+  lines: [
+    { type:'narration', text:'你的諮商室很小。一張桌子、兩張椅子、一盆快要枯死的盆栽。' },
+    { type:'narration', text:'桌上有一張紙條，是上一任諮商師留下的。' },
+    { type:'quote', text:'「有時候你覺得自己什麼都沒做到。但光是有人願意聽，就已經夠了。祝你好運。」' },
+    { type:'narration', text:'你把紙條收進抽屜。桌上有幾份資料夾。' },
+  ],
+  choices: [{ text:'看看桌上的資料', next:'hub' }]
+},
+
+// ===================== HUB（等候室）=====================
+hub: {
+  art: ART.office,
+  render(container) {
+    const allDone = state.completed.includes('ep1') && state.completed.includes('ep2');
+    if (allDone) { goScene('epilogue'); return; }
+
+    let ambient = '';
+    if (state.completed.length === 0) {
+      ambient = '桌上有幾份資料夾。你決定先看哪一份。';
+    } else {
+      ambient = '諮商室安靜了下來。你喝了一口涼掉的咖啡，做了個鬼臉。桌上還有資料夾。';
+    }
+
+    let html = `<pre class="braille-art">${ART.office}</pre>`;
+    html += `<div class="line narration visible" style="margin-bottom:1.2rem">${ambient}</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:.8rem;margin-top:.5rem">`;
+
+    // EP1 — 林宥成
+    if (state.completed.includes('ep1')) {
+      html += `<button class="choice-btn" disabled style="opacity:.4;cursor:default">📁 林宥成（17歲・高二）—— 已完成 ✓</button>`;
+    } else {
+      html += `<button class="choice-btn" onclick="goScene('file')">📁 林宥成（17歲・高二）<br><span style="font-size:.78rem;color:var(--text-dim)">轉介原因：在聯絡簿寫「好想死」</span></button>`;
+    }
+
+    // EP2 — 陳雅婷
+    if (state.completed.includes('ep2')) {
+      html += `<button class="choice-btn" disabled style="opacity:.4;cursor:default">📁 陳雅婷（42歲・設計師）—— 已完成 ✓</button>`;
+    } else {
+      html += `<button class="choice-btn" onclick="goScene('ep2_file')">📁 陳雅婷（42歲・設計師）<br><span style="font-size:.78rem;color:var(--text-dim)">主訴：「想跟人討論一下接下來的安排。」</span></button>`;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+    container.style.opacity = '1';
+  }
+},
+
+// ===================== 林宥成 =====================
+file: {
+  lines: [
+    { type:'file-info', html:'<span class="label">姓名</span><br><span class="value">林宥成（化名）</span>' },
+    { type:'file-info', html:'<span class="label">年齡／年級</span><br><span class="value">17 歲 ／ 高二</span>' },
+    { type:'file-info', html:'<span class="label">轉介原因</span><br><span class="value">月考後在聯絡簿寫「好想死」，導師發現後轉介。</span>' },
+    { type:'file-info', html:'<span class="label">導師備註</span><br><span class="value">「應該只是說說而已，但學校規定要轉介一下。成績最近退步很多，上課都在睡覺。」</span>' },
+    { type:'narration', text:'你深吸一口氣。' },
+  ],
+  choices: [{ text:'請他進來', next:'meet' }]
+},
+
+meet: {
+  art: ART.student, noteHint: true, mood:'cold',
+  charCard: { name:'林宥成', sub:'17歲・高二', traits:['皺巴巴的制服','書包只背一邊','眼神飄忽'], ep:'ep1' },
+  lines: [
+    { type:'narration', text:'門被推開。一個穿著皺巴巴制服的男生走進來，書包往地上一丟就坐下。' },
+    { type:'dialogue', speaker:'林宥成', text:'嗨。' },
+    { type:'dialogue', speaker:'林宥成', text:'先說好，我沒有要跳樓什麼的。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'就考了 20 分嘛，然後心情很差就在聯絡簿寫好想死。' },
+    { type:'dialogue', speaker:'林宥成', text:'結果導師看到差點叫 119。我們教室在一樓欸，我要跳也跳不死好嗎。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'她那個反應比較好笑，比我考 20 分還精彩。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯反正我現在在這了。你要問什麼就問吧。', notable:true },
+    { type:'observation', text:'他一直在開玩笑。但書包是用丟的——帶著情緒進來的人不會這麼輕鬆。', notable:true },
+  ],
+  choices: [
+    { label:'A', text:'「一樓跳下去頂多扭到腳。所以你寫那句話的時候，腦袋在想什麼？」', next:'path_a1' },
+    { label:'B', text:'「你導師的反應是不是比你考卷上的答案還誇張？」', next:'path_b1' },
+    { label:'C', text:'「20 分⋯⋯什麼科目啊？我以前最低也有 30 幾。」', next:'path_c1' },
+  ]
+},
+
+path_a1: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'想什麼喔⋯⋯（抓頭）' },
+    { type:'dialogue', speaker:'林宥成', text:'就⋯⋯覺得很煩吧。不是只有考試，是所有事情都很煩。' },
+    { type:'dialogue', speaker:'林宥成', text:'你知道那種感覺嗎？就是不管做什麼都覺得沒有用。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'讀了也考不好，不讀也考不好，那我到底在幹嘛？', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'就是⋯⋯很累。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'converge1' }]
+},
+path_b1: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'（笑了一下）對，她真的很誇張。' },
+    { type:'dialogue', speaker:'林宥成', text:'但說真的，她是我遇過最認真的老師了。其他老師看到大概直接忽略。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'其實被她那樣緊張，有一點⋯⋯怎麼說。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'就是覺得，原來真的有人會在意這種事。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'好了不要講這個了，很噁心。（笑）' },
+  ],
+  choices: [{ text:'繼續', next:'converge1' }]
+},
+path_c1: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'數學跟物理都 20 幾。你 30 幾喔？那你比我厲害。（笑）' },
+    { type:'dialogue', speaker:'林宥成', text:'其實我以前也沒有很爛啦，大概都 60、70 分。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'就最近⋯⋯不知道為什麼，怎麼讀都讀不進去。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'晚上讀到兩三點，隔天上課就睡著，然後考試還是爛。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'一個完美的惡性循環。我都覺得可以拿去當教科書範例。' },
+  ],
+  choices: [{ text:'繼續', next:'converge1' }]
+},
+
+converge1: {
+  lines: [
+    { type:'narration', text:'他說到讀書的時候，語氣變了。沒那麼輕鬆了。他開始用指甲摳沙發扶手。' },
+    { type:'observation', text:'語氣轉變了。開場的玩笑是防衛機制，現在防衛鬆動了。可以試著深入。', notable:true },
+  ],
+  choices: [
+    { label:'A', text:'「讀到兩三點？你平常幾點睡？」', next:'study1' },
+    { label:'B', text:'「聽起來你其實很努力，只是結果不如預期。」', next:'study2' },
+    { label:'C', text:'「完美的惡性循環⋯⋯聽起來你比大部分人都更清楚自己的狀況。」', next:'study3' },
+    { label:'D', text:'「我需要直接問你——你有沒有想過傷害自己？」', next:'deflect1' },
+  ]
+},
+
+deflect1: {
+  mood:'tense',
+  lines: [
+    { type:'narration', text:'他的表情瞬間變了。像是拉上了一扇鐵門。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯你也跟輔導室那些人一樣。' },
+    { type:'dialogue', speaker:'林宥成', text:'「有沒有想過傷害自己？」「情緒怎麼樣？」「一到十分你打幾分？」' },
+    { type:'dialogue', speaker:'林宥成', text:'我已經回答過三次了。沒有。好了吧？', notable:true },
+    { type:'observation', text:'他關上了。這個問題他已經被問到麻木了。有時候這題必須問——但不是在他還沒信任你的時候。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯算了。你還要問什麼。' },
+    { type:'narration', text:'他往後靠進椅子裡，手臂交叉。剛才那個開始鬆動的人，又把自己包起來了。' },
+  ],
+  choices: [{ text:'繼續', next:'converge2' }]
+},
+study1: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'三四點吧。回家先吃飯，等我媽出門上班，就開始讀。' },
+    { type:'dialogue', speaker:'林宥成', text:'她晚班做到凌晨，所以家裡就我一個人。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯其實也不完全是在讀書。有時候就坐在那裡發呆。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'一個人在家有時候會想很多有的沒的。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'converge2' }]
+},
+study2: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯你是第一個說我努力的人欸。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'大家都只看到 20 分。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'我媽也是⋯⋯她不會罵我。但她看到成績單的時候那個眼神⋯⋯', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'比罵還難受。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'converge2' }]
+},
+study3: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'對啊，我知道問題在哪。但知道有什麼用。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯我媽也是。她知道不能這麼操自己。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'但她還是每天做兩份工。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'我們家都很會知道問題然後不解決。（苦笑）', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'converge2' }]
+},
+
+converge2: {
+  lines: [
+    { type:'narration', text:'他提到了媽媽。每次提到她，他的肩膀都會微微縮起來——不是悲傷，更像怕被壓垮。' },
+    { type:'observation', text:'每次說到媽媽，身體語言就變了。核心可能不是成績——是他跟媽媽之間的什麼。', notable:true },
+  ],
+  choices: [
+    { label:'A', text:'「你媽媽做兩份工？她知道你在這裡嗎？」', next:'mom1' },
+    { label:'B', text:'「你剛才提到媽媽的時候，表情變了。」', next:'mom2' },
+    { label:'C', text:'「一個人在家到凌晨⋯⋯那是很長的時間。」', next:'mom3' },
+  ]
+},
+
+mom1: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'她不知道。不要跟她說。', notable:true },
+    { type:'narration', text:'他的語氣突然認真了。跟剛才在開玩笑的人像是兩個人。' },
+    { type:'dialogue', speaker:'林宥成', text:'她已經夠煩了。不要再讓她擔心。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'她白天在便利商店，晚上去餐廳洗碗。週末有時候還去做清潔。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'她說這樣就可以付我的補習費了。⋯⋯但我補了也沒有用啊。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep1_revelation' }]
+},
+mom2: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'有嗎？⋯⋯沒有啦。' },
+    { type:'dialogue', speaker:'林宥成', text:'就⋯⋯她很辛苦。我爸走了以後她一個人撐。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'她從來沒跟我抱怨過。連生病都不去看醫生，說浪費錢。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'然後養出來的小孩考 20 分。⋯⋯你說，這不是廢物是什麼。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep1_revelation' }]
+},
+mom3: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'嗯⋯⋯很安靜。' },
+    { type:'dialogue', speaker:'林宥成', text:'有時候安靜到會開始想一些有的沒的。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'像是如果我不在的話，我媽是不是反而輕鬆。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'不用花補習費、不用擔心我、不用那麼辛苦。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'但有時候半夜真的會覺得⋯⋯她沒有我比較好。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep1_revelation' }]
+},
+
+ep1_revelation: {
+  art: ART.revelation, mood:'warm',
+  lines: [
+    { type:'observation', text:'他準備好了。接下來他說的話，可能是今天最重要的部分。', notable:true },
+    { type:'narration', text:'房間安靜了好幾秒。他低下頭，手指在膝蓋上畫圈。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯你知道我為什麼寫那句「好想死」嗎？' },
+    { type:'dialogue', speaker:'林宥成', text:'不是因為 20 分。' },
+    { type:'dialogue', speaker:'林宥成', text:'是因為考卷發下來的時候，我第一個想到的是——我媽今天又要上夜班到凌晨兩點。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'然後她這麼辛苦，養出來的是一個連 20 分都考不到的人。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'不是想死。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'是覺得⋯⋯她那麼辛苦，而我活得這麼輕鬆——我不配。', notable:true },
+  ],
+  choices: [
+    { label:'A', text:'「你剛才說的這些，有跟你媽說過嗎？」', next:'ep1_end_a' },
+    { label:'B', text:'「你覺得自己是廢物。但一個廢物不會讀書讀到凌晨三點。」', next:'ep1_end_b' },
+    { label:'C', text:'「所以你不是想死——你是覺得活著欠了你媽一份你還不起的債。」', next:'ep1_end_c' },
+    { label:'D', text:'（不說話。讓這個房間安靜一下。）', next:'ep1_silence', silence:true },
+    { label:'📋', text:'「你說你"就是⋯⋯很累"——那個累，不只是念書的累吧？」', next:'ep1_end_note', requireNote:['累','努力','20 分','沒有用','廢物'] },
+  ]
+},
+
+ep1_end_note: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯你記得我說的話喔。' },
+    { type:'narration', text:'他愣了。不是被戳中的愣——是「有人仔細聽過」的驚訝。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯對。不只是念書。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'是我媽這麼辛苦，然後我什麼忙都幫不上。連一個及格的成績都交不出來。' },
+    { type:'dialogue', speaker:'林宥成', text:'那種累是⋯⋯你很想證明自己有用，但怎麼做都不夠。', notable:true },
+    { type:'dialogue', speaker:'你', text:'聽起來⋯⋯你不是做不好。是你太用力在扛了。扛到忘記自己也是會累的。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯' },
+    { type:'narration', text:'他的眼眶紅了。這次他沒有忍。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯可以下禮拜再來嗎？' },
+    { type:'observation', text:'你引用了他自己的話。這是最有力的工具——不是你的道理，是他的感受，被人接住了。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep1_final' }]
+},
+
+ep1_silence: {
+  mood:'quiet',
+  lines: [
+    { type:'narration', text:'你什麼都沒有說。房間裡只剩下時鐘的聲音。' },
+    { type:'narration', text:'十秒。二十秒。他開始不安地搓手。但你沒有開口。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯你怎麼不說話？' },
+    { type:'narration', text:'你還是沒有說話。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯奇怪。你不說話，我反而⋯⋯比較不緊張。' },
+    { type:'dialogue', speaker:'林宥成', text:'之前學校輔導室那個老師一直問我「你還好嗎」「你要不要說說看」。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'你是第一個不急著要我說什麼的人。', notable:true },
+    { type:'narration', text:'他的肩膀慢慢放下來了。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯其實我也不知道自己到底在氣什麼。可能不是成績。', notable:true },
+    { type:'dialogue', speaker:'林宥成', text:'是我媽每天做兩份工，回來累到連話都不想講。然後我連一個好的分數都給不了她。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯不是想死。是覺得自己沒有資格坐在這裡被人擔心。', notable:true },
+    { type:'narration', text:'沉默有時候比任何話都重。你讓他自己找到了出口。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯下禮拜可以再來嗎？' },
+  ],
+  choices: [{ text:'繼續', next:'ep1_final' }]
+},
+ep1_end_a: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'怎麼可能跟她說。她那麼累了，回家還要聽我在那邊靠北。' },
+    { type:'dialogue', speaker:'你', text:'所以你選擇一個人把這些扛著？' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯好像是。' },
+    { type:'dialogue', speaker:'你', text:'我在想⋯⋯你媽那麼辛苦，如果你真的是負擔，她為什麼不放手？你覺得是什麼讓她撐著？' },
+    { type:'narration', text:'他的眼眶紅了。但他很用力忍住。' },
+    { type:'dialogue', speaker:'你', text:'回家跟她說「媽，妳辛苦了。」不用多，就這樣。下週來告訴我她的反應。' },
+    { type:'dialogue', speaker:'林宥成', text:'（揉了揉眼睛）⋯⋯好吧。' },
+  ],
+  choices: [{ text:'繼續', next:'ep1_final' }]
+},
+ep1_end_b: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯讀到半夜也沒用啊。' },
+    { type:'dialogue', speaker:'你', text:'沒用是一回事。你做了是另一回事。' },
+    { type:'dialogue', speaker:'你', text:'你考了 20 分，然後心裡難受到寫下那三個字。如果真的不在乎⋯⋯你不會難受。' },
+    { type:'dialogue', speaker:'你', text:'聽起來你在乎的程度，已經超過你自己能承受的了。' },
+    { type:'dialogue', speaker:'林宥成', text:'可是我真的考很爛。' },
+    { type:'dialogue', speaker:'你', text:'成績的事我們可以慢慢想辦法。但我比較好奇的是——你對你媽的那份心，你自己有沒有看到？下週再來聊聊。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯好。' },
+  ],
+  choices: [{ text:'繼續', next:'ep1_final' }]
+},
+ep1_end_c: {
+  lines: [
+    { type:'dialogue', speaker:'林宥成', text:'（愣了很久）⋯⋯對。就是這種感覺。不是想死。是覺得我欠她。' },
+    { type:'dialogue', speaker:'你', text:'那我問你。如果你真的不在了，你覺得你媽會怎樣？' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯' },
+    { type:'narration', text:'他想了很久。你沒有催他。' },
+    { type:'dialogue', speaker:'林宥成', text:'她大概⋯⋯會很難過吧。' },
+    { type:'dialogue', speaker:'你', text:'她一個人扛到現在。你是她身邊最近的人了。你覺得自己是負擔⋯⋯但你有沒有想過，也許你就是她還在撐的原因？' },
+    { type:'narration', text:'他低著頭，肩膀在微微發抖。' },
+    { type:'dialogue', speaker:'你', text:'你不需要現在就好起來。但下週，再來這裡坐坐。' },
+    { type:'dialogue', speaker:'林宥成', text:'（點頭）' },
+  ],
+  choices: [{ text:'繼續', next:'ep1_final' }]
+},
+
+ep1_final: {
+  art: ART.ending, mood:'end',
+  lines: [
+    { type:'narration', text:'林宥成站起來，拿起地上的書包。這次兩條帶子都掛上了肩膀。' },
+    { type:'narration', text:'他走到門口，回頭看了一眼。' },
+    { type:'dialogue', speaker:'林宥成', text:'⋯⋯謝謝。（很小聲）' },
+    { type:'narration', text:'門關上了。' },
+  ],
+  choices: [{ text:'回到諮商室', next:'hub' }]
+},
+
+// ===================== 陳雅婷 =====================
+ep2_file: {
+  lines: [
+    { type:'file-info', html:'<span class="label">姓名</span><br><span class="value">陳雅婷</span>' },
+    { type:'file-info', html:'<span class="label">年齡／職業</span><br><span class="value">42 歲 ／ 平面設計師</span>' },
+    { type:'file-info', html:'<span class="label">來訪原因</span><br><span class="value">自行預約。主訴：「想跟人討論一下接下來的安排。」</span>' },
+    { type:'file-info', html:'<span class="label">備註</span><br><span class="value">乳癌第四期，已停止治療。育有一女（15 歲）。</span>' },
+    { type:'narration', text:'你看了兩遍。把資料夾放下。' },
+  ],
+  choices: [{ text:'請她進來', next:'ep2_meet' }]
+},
+
+ep2_meet: {
+  art: ART.woman, noteHint: true, mood:'warm',
+  charCard: { name:'陳雅婷', sub:'42歲・平面設計師', traits:['鮮橘色外套','手拿資料夾','笑容很大'], ep:'ep2' },
+  lines: [
+    { type:'narration', text:'門開了。跟你預期的完全不同——一個穿著鮮橘色外套的女人走進來，手上拿著一個資料夾，笑得比這間諮商室裡的任何東西都亮。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'嗨！你就是新來的心理師？看起來很年輕欸。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我是雅婷。乳癌末期。——不用露出那種表情啦，我已經過了難過的階段了。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'簡單說：兩年前確診，化療、開刀、又化療，然後復發轉移。醫生說大概半年。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'最後一個月會非常痛——他講得很委婉，但我查過了。所以我決定在那之前，自己選擇什麼時候離開。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'不是衝動喔。我想了三個月了。我跟癌症相處兩年了，比我上一段婚姻還久，而且癌症更忠誠。（笑）' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我來不是要你勸我的。我是來聊聊一件事的。', notable:true },
+    { type:'observation', text:'她進來就掌控節奏——笑容、資料夾、資訊量密集的自我介紹。這是高度準備過的表達，不是自然對話。', notable:true },
+  ],
+  choices: [{ text:'「⋯⋯什麼事？」', next:'ep2_plan' }]
+},
+
+ep2_plan: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'——你看。' },
+    { type:'narration', text:'她打開資料夾。裡面是一張設計精美的邀請卡，暖橘色和白色，上面寫著「陳雅婷的畢業典禮——趁我還能跟你喝一杯」。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我要辦一個生前葬禮。我自己的畢業企劃。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'不穿黑的，穿自己最好看的衣服來。有 playlist，有投影片放我這輩子最丟臉的照片。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'還有一個環節是讓每個人上來講我壞話。活著的時候聽，不要背後才講。（笑）' },
+    { type:'dialogue', speaker:'陳雅婷', text:'企劃大概八成完成了。還差一些小東西。所以——你有什麼想問的？' },
+  ],
+  choices: [
+    { label:'A', text:'「你什麼都想好了。那你今天來找我，是想聊什麼？」', next:'ep2_pa1' },
+    { label:'B', text:'「企劃完成八成。剩下的兩成是什麼？」', next:'ep2_pb1' },
+    { label:'C', text:'「你講這些的時候一直在笑。」', next:'ep2_pc1' },
+  ]
+},
+
+ep2_pa1: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'你跟其他醫生不太一樣欸。他們都先問我有沒有想清楚。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我來⋯⋯其實也沒什麼特別的。就覺得這種事應該跟專業的人聊一下。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'確認一下我的腦袋是清楚的。你幫我蓋個章就好。（笑）' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯好啦，也許不只是蓋章。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'有些事自己想跟說出來，好像不太一樣。' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_converge1' }]
+},
+ep2_pb1: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'剩下的喔⋯⋯一些行政的東西。場地還沒確定。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'還有⋯⋯邀請卡還沒寄出去。', notable:true },
+    { type:'dialogue', speaker:'你', text:'邀請卡都設計好了，為什麼還沒寄？' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯名單還沒完全確定。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'還有一些人我在想要不要邀請。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep2_converge1' }]
+},
+ep2_pc1: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'對啊，我就這個個性。癌症又沒有改變我的個性。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'你是不是想問我是不是在裝的？⋯⋯說真的，一開始是裝的。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'剛確診的時候哭了一個月。但哭完之後⋯⋯人會接受的。比你想像中快。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'反正癌細胞不會因為你難過就停下來。所以我選擇笑著處理。至少效率比較高。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep2_converge1' }]
+},
+
+ep2_converge1: {
+  lines: [
+    { type:'narration', text:'她說話的時候，手一直在翻那個資料夾。像是做簡報的人在等下一張投影片。' },
+    { type:'observation', text:'她一直在翻資料夾。手需要有事做——當話題接近她不想碰的部分，肢體動作會加快。', notable:true },
+  ],
+  choices: [
+    { label:'A', text:'「跟我說說你的名單。誰會來你的畢業典禮？」', next:'ep2_ga' },
+    { label:'B', text:'「你說你想了三個月。這三個月裡最難的部分是什麼？」', next:'ep2_gb' },
+    { label:'C', text:'「你設計這張邀請卡花了多久？」', next:'ep2_gc' },
+    { label:'D', text:'「你真的完全不害怕嗎？一點都不怕？」', next:'ep2_deflect1' },
+  ]
+},
+
+ep2_deflect1: {
+  mood:'tense',
+  lines: [
+    { type:'narration', text:'她的笑容沒有消失。但凍住了。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我說了不怕。你是不是一定要我說「其實我很害怕」你才滿意？' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我花了三個月接受這件事。不是每個面對死亡的人都要崩潰給你看的。', notable:true },
+    { type:'observation', text:'她覺得你在否定她的決定。她需要的不是被質疑——是被當成一個做了選擇的成年人來對待。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯好吧。我們繼續。你還想知道什麼？' },
+    { type:'narration', text:'她重新翻開資料夾。但翻的速度比剛才快——像是在確認自己還掌控著一切。' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_converge2' }]
+},
+ep2_ga: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'名單很豐富的。大學同學一群，她們說要穿當年畢業照的衣服來。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'公司的同事，不多，但幾個知心的。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我前夫也會來——我們離婚但沒翻臉，他人不錯，只是不適合當老公。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯大概就這些。', notable:true },
+    { type:'narration', text:'她停了。不是在想，是刻意停了。' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_converge2' }]
+},
+ep2_gb: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'最難的⋯⋯做決定本身不難。我研究過了，看了很多資料。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'難的是跟身邊的人講。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'有人哭、有人生氣、有人說我瘋了。但最後她們都接受了。大部分啦。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯大部分。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep2_converge2' }]
+},
+ep2_gc: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'三天。是我做過最快的設計。平常商案都拖很久的。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯可能因為這是我做過最重要的一件作品吧。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'奇怪的是，做完了但一直沒有按下列印。都三個禮拜了，檔案躺在桌面上。', notable:true },
+    { type:'dialogue', speaker:'你', text:'三個禮拜⋯⋯是什麼讓你印不下去？' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯我不知道。可能是⋯⋯印出來就真的要寄了。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep2_converge2' }]
+},
+
+ep2_converge2: {
+  art: ART.chair,
+  lines: [
+    { type:'narration', text:'你注意到一件事。她講了朋友、同事、前夫。但資料上寫著她有一個 15 歲的女兒。' },
+    { type:'narration', text:'她一次都沒有提到。' },
+    { type:'observation', text:'她列了所有人，唯獨跳過女兒。這種遺漏不是忘記——是刻意繞開。', notable:true },
+  ],
+  choices: [
+    { label:'A', text:'「你的名單裡⋯⋯有你女兒嗎？」', next:'ep2_da' },
+    { label:'B', text:'「你提到了很多人。但有一個人你一直沒說到。」', next:'ep2_db' },
+    { label:'C', text:'「你的女兒知道你的計畫嗎？」', next:'ep2_dc' },
+  ]
+},
+
+ep2_da: {
+  lines: [
+    { type:'narration', text:'第一次。她的笑容消失了。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'她當然會在。她是我女兒。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯她叫小晴。15 歲。' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_reveal' }]
+},
+ep2_db: {
+  lines: [
+    { type:'narration', text:'她把資料夾合上了。進來之後第一次沒有在翻它。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'你⋯⋯在說我女兒？' },
+    { type:'dialogue', speaker:'陳雅婷', text:'她叫小晴。15 歲。' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_reveal' }]
+},
+ep2_dc: {
+  lines: [
+    { type:'narration', text:'她的手指在資料夾邊緣停住了。指節發白。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'我女兒⋯⋯她叫小晴。' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_reveal' }]
+},
+
+ep2_reveal: {
+  art: ART.revelation, mood:'warm',
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'小晴知道我生病。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'但她不知道我決定提前離開。' },
+    { type:'narration', text:'她的聲音開始不穩了。跟剛才那個充滿自信的女人像是兩個人。' },
+    { type:'observation', text:'她的聲音在抖。進門以來第一次情緒失控。女兒是她整套計畫裡唯一沒有處理好的部分。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'我跟她說媽媽在治療，會好起來的。那是半年前說的。我一直沒有更正。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'她現在每天幫我煮晚餐。雖然煮得很難吃。（笑了一下，但眼眶紅了）', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'她覺得只要吃好一點，媽媽就會好起來。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我什麼都安排好了。時間、方式、葬禮、遺囑、保險。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'但我不知道怎麼跟一個 15 歲的女孩說——媽媽不是被病帶走的。是媽媽自己選擇的。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'如果是癌症帶走我的，她可以恨癌症。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'但如果是我選擇的⋯⋯她會覺得媽媽放棄她了。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'我不怕死。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'我怕她以為我不想留下來陪她。', notable:true },
+  ],
+  choices: [
+    { label:'A', text:'「你計畫了所有人的告別方式，除了她的。因為她是最難的那一個。」', next:'ep2_end_a' },
+    { label:'B', text:'「你覺得她會恨你。但她每天煮飯給你吃——你覺得她真的不知道嗎？」', next:'ep2_end_b' },
+    { label:'C', text:'「如果小晴現在坐在這裡，你想對她說什麼？」', next:'ep2_end_c' },
+    { label:'D', text:'（不說話。陪她待在這裡就好。）', next:'ep2_silence', silence:true },
+    { label:'📋', text:'「你說這是你的"畢業企劃"——但真正的畢業典禮上，你會不讓自己最重要的人出席嗎？」', next:'ep2_end_note', requireNote:['畢業','印','邀請','寄','勸'] },
+  ]
+},
+
+ep2_end_note: {
+  lines: [
+    { type:'narration', text:'她沒有回答。手裡的資料夾慢慢闔上了。第一次。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯你從一開始就在聽。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'對。畢業典禮⋯⋯如果不讓她知道，她到了現場才發現⋯⋯' },
+    { type:'dialogue', speaker:'陳雅婷', text:'那她會覺得所有人都知道了，只有她被蒙在鼓裡。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'（眼淚掉下來了）我不怕死。我怕她覺得我不信任她。', notable:true },
+    { type:'dialogue', speaker:'你', text:'你信任她。所以你才這麼害怕——因為她的反應對你來說比任何人都重要。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯（哭著笑了）你是第一個把我的話記得這麼清楚的人。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'好吧。我先跟她談。邀請卡的事⋯⋯之後再說。' },
+    { type:'observation', text:'你把她散落的線索串成了一條線。她不是不知道答案——她需要有人幫她看見自己在逃避什麼。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep2_final' }]
+},
+
+ep2_silence: {
+  mood:'quiet',
+  lines: [
+    { type:'narration', text:'你沒有接話。你只是看著她。' },
+    { type:'narration', text:'空調的聲音填滿了整間諮商室。她低下頭，手指反覆摩擦自己的手腕。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯你不說話？' },
+    { type:'narration', text:'你依然沒有說話。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯你不說話，我反而更想講。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯奇怪，別人都急著勸我、跟我講道理。你是第一個什麼都不說的。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我其實⋯⋯知道答案的。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'我知道我該告訴小晴。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'不是因為她有權利知道——是因為我不想讓她以為媽媽是突然消失的。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯我只是一直在等一個人讓我自己說出來。不是被逼的、不是被勸的。是我自己說的。', notable:true },
+    { type:'narration', text:'她的眼淚掉下來了。但她笑了。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'你什麼都沒做。但你做了最重要的事。', notable:true },
+  ],
+  choices: [{ text:'繼續', next:'ep2_final' }]
+},
+ep2_end_a: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯對。我可以面對死亡。但我沒辦法面對她的眼淚。' },
+    { type:'dialogue', speaker:'你', text:'所以邀請卡印不出來——不是因為場地或名單。是因為你不知道那張卡要怎麼遞到她手上。' },
+    { type:'narration', text:'她的眼淚掉下來了。她沒有擦。' },
+    { type:'dialogue', speaker:'你', text:'你替所有人設想好了。但你沒有讓她參與這個過程。' },
+    { type:'dialogue', speaker:'你', text:'也許她會哭。也許她會生氣。但至少——那是真的。比一個善意的謊言真。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_final' }]
+},
+ep2_end_b: {
+  lines: [
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯你什麼意思？' },
+    { type:'dialogue', speaker:'你', text:'一個 15 歲的女孩，忽然開始每天煮飯給媽媽吃。她以前也這樣嗎？' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯不會。以前她連廚房都不進的。', notable:true },
+    { type:'dialogue', speaker:'你', text:'所以她可能比你以為的更清楚。她可能已經在用她的方式準備了。只是你們都不敢先開口。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'那天⋯⋯她煮了一碗很鹹的湯。我說太鹹了。她說——', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'「那你要留下來教我啊。」', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯我當時以為她在開玩笑。' },
+    { type:'dialogue', speaker:'你', text:'她不是叫你不要死。她是叫你不要偷偷走。她在要你給她一個好好說再見的機會。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_final' }]
+},
+ep2_end_c: {
+  lines: [
+    { type:'narration', text:'她看著旁邊那張空椅子。看了很久。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯' },
+    { type:'dialogue', speaker:'陳雅婷', text:'（聲音很輕）寶貝，媽媽要告訴你一件事。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'不是媽媽不想陪你。', notable:true },
+    { type:'dialogue', speaker:'陳雅婷', text:'是媽媽⋯⋯不想讓你看到最後那個樣子。我想要你記得的我，是現在這樣的。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'會笑、會罵你煮的湯太鹹、會⋯⋯' },
+    { type:'narration', text:'她說不下去了。' },
+    { type:'dialogue', speaker:'你', text:'你剛才對著空椅子說的這些——這才是她需要聽到的。不是計畫、不是安排。是你為什麼做這個選擇。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯但我怕她——' },
+    { type:'dialogue', speaker:'你', text:'她一定會難過。但難過不等於不理解。你不是在拋棄她。但你得讓她知道。' },
+  ],
+  choices: [{ text:'繼續', next:'ep2_final' }]
+},
+
+ep2_final: {
+  mood:'end',
+  lines: [
+    { type:'narration', text:'陳雅婷拿起桌上的資料夾。那張邀請卡露出一角。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'⋯⋯我果然還有一件事沒做完。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我以為我什麼都準備好了。但最重要的那個人，我一直在逃。' },
+    { type:'narration', text:'她站起來，把外套拉好。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'我不會改變我的決定。但我要先跟她談。之後才能真的把邀請卡寄出去。' },
+    { type:'narration', text:'她走到門口。' },
+    { type:'dialogue', speaker:'陳雅婷', text:'謝謝你沒有勸我。你是第一個就只是聽的人。', notable:true },
+    { type:'narration', text:'門關上了。' },
+    { type:'narration', text:'你的手不自覺地碰了一下口袋裡的手機。' },
+  ],
+  choices: [{ text:'回到諮商室', next:'hub' }]
+},
+
+// ============================================================
+//  EPILOGUE
+// ============================================================
+epilogue: {
+  mood:'end',
+  lines: [
+    { type:'narration', text:'諮商室空了。' },
+    { type:'narration', text:'今天你聽了一個男孩說他覺得自己不配活著。' },
+    { type:'narration', text:'你聽了一個女人說她準備好了要死。' },
+    { type:'narration', text:'他們的問題很不一樣。但他們都是第一次被人好好聽完。' },
+    { type:'narration', text:'你看了一下時鐘。該下班了。' },
+    { type:'narration', text:'你把那盆快枯死的盆栽澆了水。' },
+    { type:'narration', text:'你拿起手機。通訊錄裡有一個號碼。你很久很久沒撥出去了。' },
+    { type:'narration', text:'⋯⋯' },
+    { type:'narration', text:'你按下了撥出鍵。' },
+    { type:'narration', text:'嘟——嘟——嘟——' },
+    { type:'narration', text:'「⋯⋯喂？」' },
+    { type:'narration', text:'「⋯⋯媽。」' },
+    { type:'narration', text:'你的聲音比你預期的還小。' },
+  ],
+  choices: [{ text:'翻開你的筆記', next:'review' }]
+},
+
+// ============================================================
+//  REVIEW
+// ============================================================
+review: {
+  render(container) {
+    const duration = Math.round((Date.now() - state.startTime) / 60000);
+    const noteCount = state.notebook.length;
+    const ep1Notes = state.notebook.filter(n => !n.scene.startsWith('ep2'));
+    const ep2Notes = state.notebook.filter(n => n.scene.startsWith('ep2'));
+
+    let notesHTML = '';
+    if (noteCount === 0) {
+      notesHTML = '<div class="nb-empty" style="opacity:1">你沒有記下任何筆記。但你聽完了整場對話。光是這件事，就已經夠了。</div>';
+    } else {
+      if (ep1Notes.length > 0) {
+        notesHTML += '<p style="color:var(--text-dim);font-size:.8rem;margin:.8rem 0 .3rem">林宥成</p>';
+        notesHTML += ep1Notes.map(n =>
+          n.observation
+            ? `<div class="nb-item" style="animation:none;opacity:1;border-left-color:var(--cyan);background:rgba(34,211,238,.08)"><span style="color:var(--cyan)">🔍 </span>${n.text}</div>`
+            : `<div class="nb-item" style="animation:none;opacity:1"><span style="color:var(--amber)">${n.speaker?n.speaker+'：':''}</span>${n.text}</div>`
+        ).join('');
+      }
+      if (ep2Notes.length > 0) {
+        notesHTML += '<p style="color:var(--text-dim);font-size:.8rem;margin:.8rem 0 .3rem">陳雅婷</p>';
+        notesHTML += ep2Notes.map(n =>
+          n.observation
+            ? `<div class="nb-item" style="animation:none;opacity:1;border-left-color:var(--cyan);background:rgba(34,211,238,.08)"><span style="color:var(--cyan)">🔍 </span>${n.text}</div>`
+            : `<div class="nb-item" style="animation:none;opacity:1"><span style="color:var(--amber)">${n.speaker?n.speaker+'：':''}</span>${n.text}</div>`
+        ).join('');
+      }
+    }
+
+    // Insights
+    const all = state.notebook.map(n=>n.text).join(' ');
+    let insight1 = '', insight2 = '';
+
+    if (all.includes('媽') || all.includes('配') || all.includes('廢物'))
+      insight1 = '林宥成不是想死。他是被愛壓垮了——太愛媽媽，所以覺得自己不夠好。很多時候，「想死」其實是在說「我好愛你但我覺得自己不配」。';
+    else if (ep1Notes.length > 0)
+      insight1 = '一個在聯絡簿寫「好想死」的高中生，背後藏著的不是厭世，而是深到說不出口的愛和自責。';
+    else insight1 = '你陪林宥成坐了一整場。有時候光是「有人在」，就已經是一種支撐。';
+
+    if (all.includes('女兒') || all.includes('小晴') || all.includes('留下來'))
+      insight2 = '陳雅婷什麼都安排好了——除了最重要的那個人。有時候人不是怕死，是怕告別。她的勇氣不在於選擇離開，而在於最後決定先面對女兒。';
+    else if (ep2Notes.length > 0)
+      insight2 = '一個看起來什麼都準備好的人，其實有一個她不敢打開的資料夾。死亡本身不是最難的——好好說再見才是。';
+    else insight2 = '你沒有勸陳雅婷活下去。你做了更重要的事——你讓她發現自己還有一件事沒完成。';
+
+    container.innerHTML = `
+      <div class="review-section">
+        <h3>📋 諮商筆記回顧</h3>
+        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:1rem">你花了約 ${duration||'幾'} 分鐘，記下了 ${noteCount} 條筆記。</p>
+        ${notesHTML}
+      </div>
+      <div class="review-section">
+        <div class="insight-card">
+          <div class="insight-title">🔍 Episode 1 覺察</div>
+          <div class="insight-body">${insight1}</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-title">🔍 Episode 2 覺察</div>
+          <div class="insight-body">${insight2}</div>
+        </div>
+      </div>
+      <div class="review-section">
+        <h3>📊 與其他玩家的比較</h3>
+        <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:1rem">在所有完成這兩場諮商的人之中——</p>
+        <div class="stat-bar"><span class="label">「林宥成其實不是想死」</span><div class="bar"><div class="bar-fill amber" data-width="87"></div></div><span class="pct">87%</span></div>
+        <div class="stat-bar"><span class="label">「陳雅婷讓我重新想了死亡」</span><div class="bar"><div class="bar-fill pink" data-width="79"></div></div><span class="pct">79%</span></div>
+        <div class="stat-bar"><span class="label">「我想到了自己身邊的人」</span><div class="bar"><div class="bar-fill cyan" data-width="73"></div></div><span class="pct">73%</span></div>
+        <div class="stat-bar"><span class="label">「最後醫生打電話讓我哭了」</span><div class="bar"><div class="bar-fill green" data-width="61"></div></div><span class="pct">61%</span></div>
+      </div>
+      <div class="review-section">
+        <h3>✍️ 最後一件事</h3>
+        <p style="color:var(--text);font-size:.92rem;margin-bottom:.8rem">
+          作為一名諮商師，你今天學到了什麼？<br>
+          <span style="color:var(--text-dim);font-size:.82rem">（你的回答會被匿名收錄，讓下一個玩家看到。）</span>
+        </p>
+        <div class="input-area">
+          <textarea id="reflection-input" placeholder="寫下你的想法⋯⋯"></textarea>
+          <button class="submit-btn" onclick="submitReflection()">送出</button>
+        </div>
+      </div>
+      <div id="after-reflection" style="display:none">
+        <div class="review-section">
+          <h3>🌏 其他諮商師說⋯⋯</h3>
+          <div class="insight-card" style="border-left:3px solid var(--cyan)">
+            <div class="insight-body" style="font-size:.88rem">「原來想死的人不一定是不想活，只是覺得活著太對不起愛的人。」</div>
+          </div>
+          <div class="insight-card" style="border-left:3px solid var(--green)">
+            <div class="insight-body" style="font-size:.88rem">「我弟也會說想死。以前覺得他在鬧，現在覺得我應該先聽他說完。」</div>
+          </div>
+          <div class="insight-card" style="border-left:3px solid var(--pink)">
+            <div class="insight-body" style="font-size:.88rem">「陳雅婷不是怕死。她是怕女兒以為自己被拋棄了。那是完全不同的事。」</div>
+          </div>
+          <div class="insight-card" style="border-left:3px solid var(--amber)">
+            <div class="insight-body" style="font-size:.88rem">「做完之後打給我媽了。」</div>
+          </div>
+          <div class="insight-card" style="border-left:3px solid var(--red)">
+            <div class="insight-body" style="font-size:.88rem">「第二個案例讓我學到——有些人你不能救，但你可以幫她走得完整一點。」</div>
+          </div>
+        </div>
+        <div class="final-message">
+          <p>
+            今天你聽了兩個人說話。<br>
+            一個以為自己想死，其實是不知道怎麼活。<br>
+            一個決定要死，但還有一件事沒做完。<br><br>
+            死亡不一定是需要被阻止的事。<br>
+            但每個人都值得被好好聽完。<br><br>
+            <span style="color:var(--amber);font-size:1.05rem;font-weight:600">——包括你自己。</span>
+          </p>
+        </div>
+        <div style="text-align:center;margin:1.5rem 0;padding:1rem;border:1px solid var(--choice-border);border-radius:8px">
+          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.5rem">如果你現在需要有人聽你說話：</p>
+          <p style="font-size:1rem">
+            <a href="tel:1925" style="color:var(--amber);text-decoration:none">安心專線 1925</a>（24小時免費）<br>
+            <a href="tel:1995" style="color:var(--amber);text-decoration:none">生命線 1995</a>｜
+            <a href="tel:1980" style="color:var(--amber);text-decoration:none">張老師 1980</a>
+          </p>
+        </div>
+        <div class="review-section">
+          <h3>🖼️ 匯出筆記卡片</h3>
+          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.8rem">把你的筆記變成一張圖片卡片，還可以手繪塗鴉。</p>
+          <div class="export-ep-btns">
+            <button class="export-ep-btn" onclick="openExport(1)">Episode 1 — 林宥成</button>
+            <button class="export-ep-btn" onclick="openExport(2)">Episode 2 — 陳雅婷</button>
+          </div>
+        </div>
+        <div class="review-section">
+          <h3>🗺️ 你的探索</h3>
+          <div class="explore-stat">${buildExploreHTML()}</div>
+        </div>
+        <div class="review-section">
+          <h3>🔄 再來一次？</h3>
+          <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:.8rem">不同的選擇會聽到不同的故事。有些選項只有記了筆記才能解鎖。</p>
+          <div class="replay-btns">
+            <button class="replay-btn" onclick="replayEp(1)">重玩 EP1 — 林宥成</button>
+            <button class="replay-btn" onclick="replayEp(2)">重玩 EP2 — 陳雅婷</button>
+          </div>
+        </div>
+        <button class="restart-btn" onclick="location.reload()">從頭開始（重置全部）</button>
+        <p style="text-align:center;color:var(--text-dim);font-size:.75rem;margin:1rem 0 2rem">
+          心理醫生的一天 — 生死課<br>
+          Episode 1：林宥成 ｜ Episode 2：陳雅婷<br>
+          本遊戲為生命教育用途，不具備心理診斷功能。
+        </p>
+      </div>
+    `;
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.width + '%'; });
+    }, 500);
+  }
+}
+
+}; // END SCENES
+
+// ============================================================
+//  NOTEBOOK SYSTEM
+// ============================================================
+function addNote(text, speaker, isObservation) {
+  if (state.notebook.some(n => n.text === text)) return false;
+  state.notebook.push({ text, speaker, scene: state.currentScene, observation: !!isObservation });
+  updateNotebookCount();
+  return true;
+}
+function updateNotebookCount() {
+  const c = document.getElementById('nb-count');
+  c.textContent = state.notebook.length;
+  c.classList.toggle('show', state.notebook.length > 0);
+  renderNotebookBody();
+}
+function renderNotebookBody() {
+  const body = document.getElementById('nb-body');
+  if (state.notebook.length === 0) {
+    body.innerHTML = '<div class="nb-empty">還沒有記錄任何筆記。<br>點擊對話中你覺得重要的句子來記錄。</div>';
+  } else {
+    body.innerHTML = state.notebook.map(n =>
+      n.observation
+        ? `<div class="nb-item" style="border-left-color:var(--cyan);background:rgba(34,211,238,.08)"><span style="color:var(--cyan)">🔍 </span>${n.text}</div>`
+        : `<div class="nb-item"><span style="color:var(--amber)">${n.speaker?n.speaker+'：':''}</span>${n.text}</div>`
+    ).join('');
+    body.scrollTop = body.scrollHeight;
+  }
+}
+function toggleNotebook() {
+  state.notebookOpen = !state.notebookOpen;
+  document.getElementById('notebook-panel').classList.toggle('open', state.notebookOpen);
+  document.getElementById('notebook-overlay').classList.toggle('show', state.notebookOpen);
+}
+
+// ============================================================
+//  RENDERING ENGINE
+// ============================================================
+const contentEl = document.getElementById('content');
+const choicesEl = document.getElementById('choices');
+
+function goScene(id) {
+  state.currentScene = id;
+  state.path.push(id);
+  if (!state.startTime) state.startTime = Date.now();
+  // Completion tracking
+  if (id === 'ep1_final' && !state.completed.includes('ep1')) state.completed.push('ep1');
+  if (id === 'ep2_final' && !state.completed.includes('ep2')) state.completed.push('ep2');
+  // Show notebook after first patient encounter
+  if (state.path.includes('meet') || state.path.includes('ep2_meet')) document.getElementById('notebook-toggle').style.display = 'flex';
+  const scene = SCENES[id];
+  if (!scene) { console.error('Scene not found:', id); return; }
+  // Scene mood
+  const app = document.getElementById('app');
+  app.dataset.mood = scene.mood || '';
+  contentEl.style.opacity = '0';
+  choicesEl.style.opacity = '0';
+  setTimeout(() => {
+    contentEl.innerHTML = '';
+    choicesEl.innerHTML = '';
+    if (scene.render) { scene.render(contentEl); contentEl.style.opacity = '1'; return; }
+    if (scene.art) {
+      const a = document.createElement('pre');
+      a.className = 'braille-art'; a.textContent = scene.art;
+      contentEl.appendChild(a);
+    }
+    // Character card
+    if (scene.charCard) {
+      const cc = scene.charCard;
+      const card = document.createElement('div');
+      card.className = `char-card ${cc.ep}`;
+      card.innerHTML = `
+        <div class="char-avatar">${cc.name[0]}</div>
+        <div class="char-info">
+          <div class="char-name">${cc.name}</div>
+          <div class="char-sub">${cc.sub}</div>
+          <div class="char-traits">${cc.traits.map(t => `<span>${t}</span>`).join('')}</div>
+        </div>`;
+      contentEl.appendChild(card);
+    }
+    const lines = scene.lines || [];
+    const els = [];
+    lines.forEach((line, i) => {
+      const el = createLineElement(line);
+      contentEl.appendChild(el); els.push(el);
+    });
+    if (scene.noteHint && lines.some(l => l.notable)) {
+      const h = document.createElement('div');
+      h.className = 'note-hint';
+      h.textContent = '💡 點擊你覺得重要的對話來記錄筆記';
+      contentEl.appendChild(h);
+    }
+    contentEl.style.opacity = '1';
+    els.forEach((el, i) => { setTimeout(() => el.classList.add('visible'), 200 + i * 350); });
+    if (scene.choices) {
+      setTimeout(() => { renderChoices(scene.choices); choicesEl.style.opacity = '1'; }, 200 + lines.length * 350 + 400);
+    }
+    // Auto scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 300);
+}
+
+function hasNoteAbout(keywords) {
+  return state.notebook.some(n => keywords.some(k => n.text.includes(k)));
+}
+
+// Mock note statistics — percentage of players who noted each line
+// Keys are first 20 chars of line text to keep it manageable
+const NOTE_STATS = {
+  '先說好，我沒有要跳樓什麼的': 34,
+  '結果導師看到差點叫 119。我們教': 28,
+  '⋯⋯反正我現在在這了。你要問什': 19,
+  '你知道那種感覺嗎？就是不管做什': 72,
+  '讀了也考不好，不讀也考不好，那': 65,
+  '就是⋯⋯很累。': 81,
+  '其實被她那樣緊張，有一點⋯⋯怎': 41,
+  '就是覺得，原來真的有人會在意這': 68,
+  '就最近⋯⋯不知道為什麼，怎麼讀': 37,
+  '晚上讀到兩三點，隔天上課就睡著': 44,
+  '⋯⋯你是第一個說我努力的人欸。': 88,
+  '大家都只看到 20 分。': 76,
+  '比罵還難受。': 71,
+  '她不會罵我。但她看到成績單的時': 63,
+  '她從來沒跟我抱怨過。連生病都不': 74,
+  '養出來的小孩考 20 分。⋯⋯你說': 57,
+  '如果我不在的話，我媽是不是反而': 83,
+  '但有時候半夜真的會覺得⋯⋯她沒': 79,
+  '她不知道。不要跟她說。': 62,
+  '她已經夠煩了。不要再讓她擔心。': 66,
+  '是因為考卷發下來的時候，我第一': 77,
+  '然後她這麼辛苦，養出來的是一個': 82,
+  '不是想死。': 91,
+  '是覺得⋯⋯我不配活得這麼輕鬆，': 89,
+  '你是第一個不急著要我說什麼的人': 85,
+  '⋯⋯不是想死。是覺得自己沒有資': 87,
+  '我是雅婷。乳癌末期。——不用露': 38,
+  '簡單說：兩年前確診，化療、開刀': 29,
+  '最後一個月會非常痛——他講得很委': 55,
+  '我來不是要你勸我的。我是來聊聊': 61,
+  '我要辦一個生前葬禮。不穿黑的，': 73,
+  '你是不是想問我是不是在裝的？⋯': 52,
+  '反正癌細胞不會因為你難過就停下': 64,
+  '難的是跟身邊的人講。': 58,
+  '⋯⋯大部分。': 69,
+  '⋯⋯可能因為這是我做過最重要的': 53,
+  '奇怪的是，做完了但一直沒有按下': 67,
+  '⋯⋯我不知道。可能是⋯⋯印出來': 62,
+  '小晴知道我生病。': 71,
+  '我跟她說媽媽在治療，會好起來的': 76,
+  '她現在每天幫我煮晚餐。雖然煮得': 80,
+  '她覺得只要吃好一點，媽媽就會好': 78,
+  '但我不知道怎麼跟一個 15 歲的女': 84,
+  '如果是癌症殺死我的，她可以恨癌': 86,
+  '但如果是我選擇的⋯⋯她會覺得媽': 82,
+  '我不怕死。': 75,
+  '我怕她以為我不想留下來陪她。': 92,
+  '謝謝你沒有勸我。你是第一個就只': 70,
+  '⋯⋯你不說話，我反而更想講。': 78,
+  '我其實⋯⋯知道答案的。': 83,
+  '不是因為她有權利知道——是因為我': 81,
+  '你什麼都沒做。但你做了最重要的': 86,
+  '「那你要留下來教我啊。」': 90,
+  '⋯⋯不會。以前她連廚房都不進的': 74,
+  '寶貝，媽媽要告訴你一件事。': 77,
+  '不是媽媽不想陪你。': 84,
+  // Observation lines
+  '他一直在開玩笑。但書包是用丟的': 45,
+  '語氣轉變了。開場的玩笑是防衛機': 52,
+  '每次說到媽媽，身體語言就變了。': 67,
+  '他準備好了。接下來他說的話，可': 49,
+  '她進來就掌控節奏——笑容、資料夾': 43,
+  '她一直在翻資料夾。手需要有事做': 56,
+  '她列了所有人，唯獨跳過女兒。這': 71,
+  '她的聲音在抖。進門以來第一次情': 63,
+  '他關上了。這個問題他已經被問到': 68,
+  // Deflect scenes
+  '我已經回答過三次了。沒有。好了': 73,
+  '他把門關上了。不是因為你問錯—': 68,
+  '我花了三個月接受這件事。不是每': 61,
+  '她覺得你在否定她的決定。她需要': 58,
+  // Notebook-powered scenes
+  '⋯⋯對。不只是念書。': 82,
+  '那種累是⋯⋯你很想證明自己有用': 85,
+  '你引用了他自己的話。這是最有力': 71,
+  '⋯⋯你從一開始就在聽。': 79,
+  '那她會覺得所有人都知道了，只有': 83,
+  '我不怕死。我怕她覺得我不信任她': 88,
+  '你把她散落的線索串成了一條線。': 65,
+};
+
+function getNoteStat(text) {
+  const key = Object.keys(NOTE_STATS).find(k => text.startsWith(k));
+  return key ? NOTE_STATS[key] : (30 + Math.floor(text.length * 1.7) % 40);
+}
+
+function createLineElement(line) {
+  const el = document.createElement('div');
+  el.className = `scene-line ${line.type}`;
+  if (line.notable) el.classList.add('notable');
+  if (line.type === 'dialogue') {
+    el.innerHTML = `<span class="speaker">${line.speaker}</span><span class="text">${line.text}</span>`;
+  } else if (line.type === 'observation') {
+    el.textContent = line.text;
+  } else if (line.html) {
+    el.innerHTML = line.html;
+  } else {
+    el.textContent = line.text;
+  }
+  if (line.notable) {
+    el.addEventListener('click', () => {
+      if (el.classList.contains('noted')) return;
+      if (addNote(line.text, line.speaker || null, line.type === 'observation')) {
+        el.classList.add('noted', 'animate-pop');
+        setTimeout(() => el.classList.remove('animate-pop'), 300);
+        // Show note stat
+        const pct = getNoteStat(line.text);
+        const stat = document.createElement('div');
+        stat.className = 'note-stat';
+        stat.textContent = `${pct}% 的玩家也記下了這句`;
+        el.appendChild(stat);
+        setTimeout(() => stat.classList.add('show'), 50);
+      }
+    });
+  }
+  return el;
+}
+
+function renderChoices(choices) {
+  choicesEl.innerHTML = '';
+  const filtered = choices.filter(c => !c.requireNote || hasNoteAbout(c.requireNote));
+  const hasUnlocked = filtered.some(c => c.requireNote);
+  if (hasUnlocked && !state._noteHintShown) {
+    state._noteHintShown = true;
+    const hint = document.createElement('div');
+    hint.className = 'unlock-hint';
+    hint.textContent = '💡 你記下的筆記解鎖了一個新選項';
+    choicesEl.appendChild(hint);
+  }
+  filtered.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn' + (choice.silence ? ' silence' : '') + (choice.requireNote ? ' notebook-ref' : '');
+    btn.innerHTML = (choice.label ? `<span class="choice-label">${choice.label}.</span>` : '') + choice.text;
+    btn.addEventListener('click', () => goScene(choice.next));
+    btn.style.opacity = '0'; btn.style.transform = 'translateY(10px)';
+    btn.style.transition = 'opacity .4s ease, transform .4s ease';
+    choicesEl.appendChild(btn);
+    setTimeout(() => { btn.style.opacity = '1'; btn.style.transform = 'translateY(0)'; }, 100 + i * 150);
+  });
+}
+
+function submitReflection() {
+  const input = document.getElementById('reflection-input');
+  const text = input.value.trim();
+  if (!text) { input.placeholder = '隨便寫什麼都好⋯⋯就算只是一個字。'; input.focus(); return; }
+  state.playerReflection = text;
+  document.getElementById('after-reflection').style.display = 'block';
+  input.disabled = true;
+  document.querySelector('.submit-btn').style.display = 'none';
+  setTimeout(() => {
+    document.getElementById('after-reflection').scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 200);
+}
+
+// ============================================================
+//  EXPORT CARD + FREE DRAWING
+// ============================================================
+const exportModal = document.getElementById('export-modal');
+const exportCanvas = document.getElementById('export-canvas');
+const exportCtx = exportCanvas.getContext('2d');
+let drawColor = '#ffffff';
+let isDrawing = false;
+let cardSnapshot = null; // stores the rendered card before drawing
+
+function openExport(episode) {
+  exportModal.classList.add('open');
+  renderCard(episode);
+  setupDrawing();
+}
+function closeExport() {
+  exportModal.classList.remove('open');
+}
+
+function renderCard(episode) {
+  const W = 800, H = 1120;
+  exportCanvas.width = W; exportCanvas.height = H;
+  const ctx = exportCtx;
+
+  // background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // border
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(10, 10, W - 20, H - 20);
+
+  // title
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = 'bold 28px "Noto Sans TC", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('心理醫生的一天 — 諮商筆記', W / 2, 55);
+
+  // episode label
+  const epLabel = episode === 1 ? 'Episode 1：林宥成' : 'Episode 2：陳雅婷';
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '18px "Noto Sans TC", sans-serif';
+  ctx.fillText(epLabel, W / 2, 90);
+
+  // divider
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, 110); ctx.lineTo(W - 40, 110); ctx.stroke();
+
+  // notes
+  const notes = episode === 1
+    ? state.notebook.filter(n => !n.scene.startsWith('ep2'))
+    : state.notebook.filter(n => n.scene.startsWith('ep2'));
+
+  ctx.textAlign = 'left';
+  let y = 145;
+
+  if (notes.length === 0) {
+    ctx.fillStyle = '#64748b';
+    ctx.font = '18px "Noto Sans TC", sans-serif';
+    ctx.fillText('（沒有記下任何筆記。但你聽完了整場對話。）', 50, y);
+  } else {
+    notes.forEach(n => {
+      if (y > H - 120) return;
+      if (n.observation) {
+        // observation note
+        ctx.fillStyle = '#0e7490';
+        ctx.font = 'bold 16px "Noto Sans TC", sans-serif';
+        ctx.fillText('🔍', 50, y);
+        y += 26;
+      } else if (n.speaker) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 16px "Noto Sans TC", sans-serif';
+        ctx.fillText(n.speaker + '：', 50, y);
+        y += 26;
+      }
+      // text
+      ctx.fillStyle = n.observation ? '#22d3ee' : '#e2e8f0';
+      ctx.font = '17px "Noto Sans TC", sans-serif';
+      const lines = wrapText(ctx, n.text, W - 110);
+      lines.forEach(line => {
+        if (y > H - 120) return;
+        ctx.fillText(line, 55, y);
+        y += 26;
+      });
+      y += 14; // gap between notes
+    });
+  }
+
+  // bottom divider
+  ctx.strokeStyle = '#334155';
+  ctx.beginPath(); ctx.moveTo(40, H - 90); ctx.lineTo(W - 40, H - 90); ctx.stroke();
+
+  // footer
+  ctx.fillStyle = '#64748b';
+  ctx.font = '14px "Noto Sans TC", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('每個人都值得被好好聽完。——包括你自己。', W / 2, H - 60);
+  ctx.fillStyle = '#475569';
+  ctx.font = '12px "Noto Sans TC", sans-serif';
+  ctx.fillText('心理醫生的一天 — 生死課  ·  安心專線 1925', W / 2, H - 35);
+
+  // save snapshot for drawing reset
+  cardSnapshot = ctx.getImageData(0, 0, W, H);
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const result = [];
+  let line = '';
+  for (let i = 0; i < text.length; i++) {
+    const testLine = line + text[i];
+    if (ctx.measureText(testLine).width > maxWidth && line) {
+      result.push(line);
+      line = text[i];
+    } else {
+      line = testLine;
+    }
+  }
+  if (line) result.push(line);
+  return result;
+}
+
+// Drawing system
+function setupDrawing() {
+  const getPos = (e) => {
+    const rect = exportCanvas.getBoundingClientRect();
+    const scaleX = exportCanvas.width / rect.width;
+    const scaleY = exportCanvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  };
+
+  const startDraw = (e) => {
+    e.preventDefault();
+    isDrawing = true;
+    const pos = getPos(e);
+    exportCtx.beginPath();
+    exportCtx.moveTo(pos.x, pos.y);
+  };
+  const draw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    exportCtx.lineWidth = drawColor === 'eraser' ? 20 : 3;
+    exportCtx.lineCap = 'round';
+    exportCtx.strokeStyle = drawColor === 'eraser' ? '#1a1a2e' : drawColor;
+    exportCtx.globalCompositeOperation = drawColor === 'eraser' ? 'destination-out' : 'source-over';
+    exportCtx.lineTo(pos.x, pos.y);
+    exportCtx.stroke();
+    exportCtx.globalCompositeOperation = 'source-over';
+  };
+  const endDraw = () => { isDrawing = false; };
+
+  // Remove old listeners by replacing canvas (simple approach)
+  exportCanvas.onmousedown = startDraw;
+  exportCanvas.onmousemove = draw;
+  exportCanvas.onmouseup = endDraw;
+  exportCanvas.onmouseleave = endDraw;
+  exportCanvas.ontouchstart = startDraw;
+  exportCanvas.ontouchmove = draw;
+  exportCanvas.ontouchend = endDraw;
+}
+
+function setDrawColor(btn, color) {
+  drawColor = color;
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function clearDrawing() {
+  if (cardSnapshot) exportCtx.putImageData(cardSnapshot, 0, 0);
+}
+
+function saveCard() {
+  const link = document.createElement('a');
+  link.download = '心理醫生的一天_筆記卡片.png';
+  link.href = exportCanvas.toDataURL('image/png');
+  link.click();
+}
+
+// ============================================================
+//  EXPLORATION TRACKER
+// ============================================================
+const EXPLORE_KEYS = {
+  ep1: [
+    { id:'path_a1', label:'開場：直球切入' },
+    { id:'path_b1', label:'開場：跟他開玩笑' },
+    { id:'path_c1', label:'開場：聊成績' },
+    { id:'deflect1', label:'直接問自殺意念（碰壁）' },
+    { id:'study1', label:'聊作息' },
+    { id:'study2', label:'肯定他的努力' },
+    { id:'study3', label:'指出他的自覺' },
+    { id:'mom1', label:'問媽媽是否知情' },
+    { id:'mom2', label:'觀察他的表情' },
+    { id:'mom3', label:'聊獨處的時間' },
+    { id:'ep1_end_a', label:'結局：鼓勵他跟媽說' },
+    { id:'ep1_end_b', label:'結局：指出他在乎' },
+    { id:'ep1_end_c', label:'結局：點出愧疚' },
+    { id:'ep1_silence', label:'結局：沉默' },
+    { id:'ep1_end_note', label:'結局：📋 筆記引用' },
+  ],
+  ep2: [
+    { id:'ep2_pa1', label:'開場：問她為何來' },
+    { id:'ep2_pb1', label:'開場：追問剩下兩成' },
+    { id:'ep2_pc1', label:'開場：指出她在笑' },
+    { id:'ep2_deflect1', label:'質疑她不怕（碰壁）' },
+    { id:'ep2_ga', label:'聊名單' },
+    { id:'ep2_gb', label:'聊最難的部分' },
+    { id:'ep2_gc', label:'聊邀請卡設計' },
+    { id:'ep2_da', label:'直接問女兒' },
+    { id:'ep2_db', label:'暗示她遺漏了誰' },
+    { id:'ep2_dc', label:'問女兒是否知情' },
+    { id:'ep2_end_a', label:'結局：指出她在逃' },
+    { id:'ep2_end_b', label:'結局：煮飯的女兒' },
+    { id:'ep2_end_c', label:'結局：空椅子' },
+    { id:'ep2_silence', label:'結局：沉默' },
+    { id:'ep2_end_note', label:'結局：📋 筆記引用' },
+  ]
+};
+
+function buildExploreHTML() {
+  let html = '';
+  const ep1Found = EXPLORE_KEYS.ep1.filter(k => state.path.includes(k.id));
+  const ep2Found = EXPLORE_KEYS.ep2.filter(k => state.path.includes(k.id));
+  const ep1Total = EXPLORE_KEYS.ep1.length;
+  const ep2Total = EXPLORE_KEYS.ep2.length;
+
+  html += `<p style="margin-bottom:.6rem">林宥成：探索了 <strong style="color:var(--amber)">${ep1Found.length}</strong> / ${ep1Total} 條路線</p>`;
+  html += EXPLORE_KEYS.ep1.map(k =>
+    state.path.includes(k.id)
+      ? `<span class="found">✓ ${k.label}</span><br>`
+      : `<span class="missed">？ ${k.label.replace(/[^：📋（）]/g, '•').replace(/[：📋（）]/g, '')}</span><br>`
+  ).join('');
+
+  html += `<p style="margin:.8rem 0 .6rem">陳雅婷：探索了 <strong style="color:var(--amber)">${ep2Found.length}</strong> / ${ep2Total} 條路線</p>`;
+  html += EXPLORE_KEYS.ep2.map(k =>
+    state.path.includes(k.id)
+      ? `<span class="found">✓ ${k.label}</span><br>`
+      : `<span class="missed">？ ${k.label.replace(/[^：📋（）]/g, '•').replace(/[：📋（）]/g, '')}</span><br>`
+  ).join('');
+
+  // Notebook unlock summary
+  const noteUnlocks = [
+    state.path.includes('ep1_end_note'),
+    state.path.includes('ep2_end_note')
+  ];
+  const unlocked = noteUnlocks.filter(Boolean).length;
+  html += `<p style="margin-top:.8rem;color:var(--cyan)">📋 筆記特殊選項：${unlocked}/2 個已解鎖`;
+  if (unlocked < 2) html += `<br><span style="font-size:.78rem;color:var(--text-dim)">提示：記下更多筆記，某些關鍵時刻會出現新的回應方式⋯⋯</span>`;
+  html += '</p>';
+
+  return html;
+}
+
+function replayEp(ep) {
+  // Keep notebook but reset path and completion for that episode
+  if (ep === 1) {
+    state.path = state.path.filter(p => p.startsWith('ep2'));
+    state.completed = state.completed.filter(c => c !== 'ep1');
+  } else {
+    state.path = state.path.filter(p => !p.startsWith('ep2') && p !== 'deflect1');
+    state.completed = state.completed.filter(c => c !== 'ep2');
+  }
+  state._noteHintShown = false;
+  document.getElementById('notebook-toggle').style.display = 'flex';
+  goScene(ep === 1 ? 'file' : 'ep2_file');
+}
+
+goScene('title');
+</script>
+</body>
+</html>
